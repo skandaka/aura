@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Form Test</title>
+</head>
+<body>
+    <h1>Form Test</h1>
+    <form id="test-form">
+        <button type="submit">Test Submit</button>
+    </form>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded');
+            const form = document.getElementById('test-form');
+            if (form) {
+                console.log('Form found');
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    console.log('Form submitted!');
+                    alert('Form works!');
+                });
+            } else {
+                console.log('Form not found');
+            }
+        });
+    </script>
+</body>
+</html>

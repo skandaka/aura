@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Map Test</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        #map { height: 500px; width: 100%; border: 2px solid #667eea; border-radius: 10px; }
+        .info { margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h1>🗺️ Aura Interactive Map Test</h1>
+        <p>This is a test page to verify that the Leaflet map integration is working properly.</p>
+    </div>
+    
+    <div id="map"></div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <script>
+        // Initialize the map
+        const map = L.map('map').setView([42.0334, -88.0834], 13);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Add markers for demo route
+        const startMarker = L.marker([42.0334, -88.0834])
+            .addTo(map)
+            .bindPopup('🚶‍♂️ Start: Schaumburg, IL');
+            
+        const endMarker = L.marker([42.0553, -88.0634])
+            .addTo(map)
+            .bindPopup('🏁 Destination: Woodfield Mall');
+        
+        // Add a demo route line
+        const routeCoords = [
+            [42.0334, -88.0834],
+            [42.0394, -88.0784],
+            [42.0454, -88.0734],
+            [42.0514, -88.0684],
+            [42.0553, -88.0634]
+        ];
+        
+        const routeLine = L.polyline(routeCoords, {
+            color: '#667eea',
+            weight: 5,
+            opacity: 0.8
+        }).addTo(map);
+        
+        // Fit map to show the route
+        map.fitBounds(routeLine.getBounds(), { padding: [20, 20] });
+        
+        console.log('✅ Map test loaded successfully');
+    </script>
+</body>
+</html>

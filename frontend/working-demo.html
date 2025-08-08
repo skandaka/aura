@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura: Accessible Urban Route Assistant</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="src/styles/main.css">
+    <style>
+        .simple-map {
+            height: 500px;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .route-info {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #495057;
+        }
+        .metric-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+        <header style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #667eea; margin-bottom: 10px;">🌟 Aura</h1>
+            <p style="color: #6c757d;">Accessible Urban Route Assistant</p>
+        </header>
+
+        <main>
+            <!-- Map Section -->
+            <section style="margin-bottom: 30px;">
+                <h2 style="color: #495057; margin-bottom: 15px;">🗺️ Interactive Route Map</h2>
+                <div id="map" class="simple-map"></div>
+            </section>
+
+            <!-- Route Information -->
+            <section class="route-info">
+                <h2 style="color: #667eea; margin-bottom: 15px;">📍 Route: Schaumburg to Woodfield Mall</h2>
+                
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">2.8 km</div>
+                        <div class="metric-label">Distance</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">85/100</div>
+                        <div class="metric-label">Accessibility</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">2</div>
+                        <div class="metric-label">Obstacles</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">12 min</div>
+                        <div class="metric-label">Est. Time</div>
+                    </div>
+                </div>
+
+                <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                    <h3 style="color: #667eea; margin-bottom: 10px;">♿ Accessibility Features</h3>
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li>✓ Wide sidewalks available</li>
+                        <li>✓ Wheelchair accessible crossings</li>
+                        <li>✓ Well-lit pathways</li>
+                        <li>✓ Audio signals at crossings</li>
+                    </ul>
+                </div>
+
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #ffc107;">
+                    <h3 style="color: #856404; margin-bottom: 10px;">⚠️ Potential Obstacles (2)</h3>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Construction</strong><br>
+                        <small>Temporary construction work blocking sidewalk</small>
+                    </div>
+                    <div>
+                        <strong>Stairs</strong><br>
+                        <small>Steps without ramp access</small>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        console.log('🚀 Initializing Aura with working map...');
+        
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ DOM loaded, creating map...');
+            
+            try {
+                // Initialize the map
+                const map = L.map('map').setView([42.0334, -88.0834], 13);
+                console.log('✅ Map container created');
+                
+                // Add OpenStreetMap tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19
+                }).addTo(map);
+                console.log('✅ Tile layer added');
+                
+                // Add start marker
+                const startMarker = L.marker([42.0334, -88.0834])
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="text-align: center;">
+                            <strong>🚶‍♂️ Start Location</strong><br>
+                            <small>Schaumburg, IL</small>
+                        </div>
+                    `);
+                
+                // Add end marker
+                const endMarker = L.marker([42.0553, -88.0634])
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="text-align: center;">
+                            <strong>🏁 Destination</strong><br>
+                            <small>Woodfield Mall</small>
+                        </div>
+                    `);
+                
+                console.log('✅ Markers added');
+                
+                // Add route line
+                const routeCoords = [
+                    [42.0334, -88.0834],
+                    [42.0394, -88.0784],
+                    [42.0454, -88.0734],
+                    [42.0514, -88.0684],
+                    [42.0553, -88.0634]
+                ];
+                
+                const routeLine = L.polyline(routeCoords, {
+                    color: '#667eea',
+                    weight: 5,
+                    opacity: 0.8,
+                    lineJoin: 'round',
+                    lineCap: 'round'
+                }).addTo(map);
+                
+                console.log('✅ Route line added');
+                
+                // Add obstacle markers
+                const obstacles = [
+                    { coords: [42.0414, -88.0754], type: 'Construction', color: '#ffc107' },
+                    { coords: [42.0494, -88.0704], type: 'Stairs', color: '#dc3545' }
+                ];
+                
+                obstacles.forEach(obstacle => {
+                    L.circleMarker(obstacle.coords, {
+                        color: obstacle.color,
+                        fillColor: obstacle.color,
+                        fillOpacity: 0.7,
+                        radius: 8
+                    }).addTo(map)
+                    .bindPopup(`
+                        <div style="text-align: center;">
+                            <strong>🚧 ${obstacle.type}</strong><br>
+                            <small>Accessibility obstacle</small>
+                        </div>
+                    `);
+                });
+                
+                console.log('✅ Obstacle markers added');
+                
+                // Fit map to show the route
+                const group = new L.featureGroup([startMarker, endMarker, routeLine]);
+                map.fitBounds(group.getBounds(), { padding: [20, 20] });
+                
+                console.log('🎉 Map initialization completed successfully!');
+                
+                // Open start marker popup after a short delay
+                setTimeout(() => {
+                    startMarker.openPopup();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Error creating map:', error);
+                
+                // Show error message
+                document.getElementById('map').innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #f8d7da; color: #721c24; text-align: center; padding: 40px; border-radius: 10px;">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">⚠️</div>
+                        <h3>Map Loading Error</h3>
+                        <p>Error: ${error.message}</p>
+                        <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 15px;">
+                            🔄 Retry
+                        </button>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

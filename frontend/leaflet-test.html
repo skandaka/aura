@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaflet Test</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #testmap { height: 300px; width: 100%; border: 2px solid blue; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Leaflet Loading Test</h1>
+    <div class="debug" id="debug-output"></div>
+    <div id="testmap"></div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        function debug(msg) {
+            document.getElementById('debug-output').innerHTML += '<div>' + new Date().toTimeString() + ': ' + msg + '</div>';
+            console.log(msg);
+        }
+        
+        debug('Starting Leaflet test...');
+        
+        if (typeof L === 'undefined') {
+            debug('❌ ERROR: Leaflet (L) is undefined');
+        } else {
+            debug('✅ Leaflet library loaded successfully');
+            debug('Leaflet version: ' + L.version);
+            
+            try {
+                const map = L.map('testmap').setView([42.0334, -88.0834], 13);
+                debug('✅ Map object created');
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+                debug('✅ Tile layer added');
+                
+                L.marker([42.0334, -88.0834]).addTo(map)
+                    .bindPopup('Test marker')
+                    .openPopup();
+                debug('✅ Marker added');
+                
+                debug('🎉 Leaflet test completed successfully!');
+            } catch (error) {
+                debug('❌ ERROR during map creation: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

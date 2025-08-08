@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura: Accessible Urban Route Assistant</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+        <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    <!-- Mapbox GL JS CSS for enhanced mapping -->
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css' rel='stylesheet' />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="src/styles/main.css?v=11">
+    <link rel="manifest" href="public/manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Advanced accessible urban routing with real-time obstacle detection and comprehensive accessibility analysis">
+</head>
+<body>
+    <div id="app-root">
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-screen">
+            <div class="logo">🌟 Aura</div>
+            <div class="loading-text">Loading accessible routing platform...</div>
+            <div class="loading-spinner"></div>
+        </div>
+
+        <!-- Main Application -->
+        <div id="main-app" class="main-app" style="display: none;">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <h1 class="app-title">🌟 Aura</h1>
+                        <p class="app-subtitle">Accessible Urban Route Assistant</p>
+                    </div>
+
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <div class="route-form-container">
+                        <h2 class="section-title">🗺️ Plan Your Route</h2>
+                        
+                        <!-- Quick Demo Locations -->
+                        <div class="demo-locations">
+                            <h3>📍 Quick Demo Routes</h3>
+                            <div class="demo-buttons">
+                                <button class="demo-btn" data-demo="downtown">🏙️ Downtown NYC</button>
+                                <button class="demo-btn" data-demo="campus">🎓 University Campus</button>
+                                <button class="demo-btn" data-demo="hospital">🏥 Medical Center</button>
+                                <button class="demo-btn" data-demo="shopping">🛍️ Schaumburg to Woodfield</button>
+                            </div>
+                            <p class="demo-description">Try these sample routes to see Aura in action</p>
+                        </div>
+
+                        <!-- Route Form -->
+                        <form id="route-form" class="route-form">
+                            <div class="form-group">
+                                <label for="start-location">Starting Location</label>
+                                <div class="location-input-container">
+                                    <div class="input-type-selector">
+                                        <label class="radio-label">
+                                            <input type="radio" name="start-input-type" value="address" checked>
+                                            <span class="radio-button"></span>
+                                            Address
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="start-input-type" value="coordinates">
+                                            <span class="radio-button"></span>
+                                            Coordinates
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="address-input" id="start-address-input">
+                                        <input type="text" id="start-address" placeholder="Enter address (e.g., 123 Main St, New York, NY)" class="address-field">
+                                        <button type="button" class="geocode-btn" onclick="geocodeAddress('start')">
+                                            📍 Find Location
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="coordinate-inputs" id="start-coordinate-input" style="display: none;">
+                                        <input type="number" id="start-lat" placeholder="Latitude" step="any">
+                                        <input type="number" id="start-lon" placeholder="Longitude" step="any">
+                                        <button type="button" class="reverse-geocode-btn" onclick="reverseGeocode('start')">
+                                            🏠 Get Address
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="location-display" id="start-location-display"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="end-location">Destination</label>
+                                <div class="location-input-container">
+                                    <div class="input-type-selector">
+                                        <label class="radio-label">
+                                            <input type="radio" name="end-input-type" value="address" checked>
+                                            <span class="radio-button"></span>
+                                            Address
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="end-input-type" value="coordinates">
+                                            <span class="radio-button"></span>
+                                            Coordinates
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="address-input" id="end-address-input">
+                                        <input type="text" id="end-address" placeholder="Enter address (e.g., 456 Oak Ave, New York, NY)" class="address-field">
+                                        <button type="button" class="geocode-btn" onclick="geocodeAddress('end')">
+                                            📍 Find Location
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="coordinate-inputs" id="end-coordinate-input" style="display: none;">
+                                        <input type="number" id="end-lat" placeholder="Latitude" step="any">
+                                        <input type="number" id="end-lon" placeholder="Longitude" step="any">
+                                        <button type="button" class="reverse-geocode-btn" onclick="reverseGeocode('end')">
+                                            🏠 Get Address
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="location-display" id="end-location-display"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="accessibility-level">Accessibility Priority</label>
+                                <select id="accessibility-level" required>
+                                    <option value="high">High - Maximum accessibility</option>
+                                    <option value="medium" selected>Medium - Balanced route</option>
+                                    <option value="low">Low - Shortest distance</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="mobility-aid">Mobility Aid</label>
+                                <select id="mobility-aid">
+                                    <option value="none">None</option>
+                                    <option value="wheelchair">Wheelchair</option>
+                                    <option value="walker">Walker</option>
+                                    <option value="cane">Cane</option>
+                                    <option value="guide_dog">Guide Dog</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="max-slope">Maximum Slope (%)</label>
+                                <input type="range" id="max-slope" min="0" max="15" value="5" step="0.5">
+                                <span class="range-value" id="slope-value">5%</span>
+                            </div>
+
+                            <div class="preferences-group">
+                                <h3>Preferences</h3>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="avoid-stairs" checked>
+                                        <span class="checkmark"></span>
+                                        Avoid stairs
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="avoid-construction" checked>
+                                        <span class="checkmark"></span>
+                                        Avoid construction
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="require-curb-cuts" checked>
+                                        <span class="checkmark"></span>
+                                        Require curb cuts
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="prefer-wider-sidewalks" checked>
+                                        <span class="checkmark"></span>
+                                        Prefer wider sidewalks
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="calculate-btn" id="calculate-btn">
+                                <span class="btn-text">🗺️ Calculate Accessible Route</span>
+                                <div class="btn-spinner" style="display: none;"></div>
+                            </button>
+                        </form>
+
+                        <!-- Obstacle Reporting -->
+                        <div class="obstacle-report-section">
+                            <button id="report-obstacle-btn" class="secondary-btn">
+                                🚧 Report Obstacle
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Results Area -->
+                <section class="results-area">
+                    <!-- Welcome Message (Compact) -->
+                    <div id="welcome-message" class="welcome-message-compact">
+                        <div class="welcome-content-compact">
+                            <h2>Welcome to Aura! ✨</h2>
+                            <p>Advanced accessible urban route assistant - Try a demo route or enter your own locations</p>
+                        </div>
+                    </div>
+
+                    <!-- Map Display Area -->
+                    <div id="map-display" class="map-display-area">
+                        <div id="map-container" class="map-container">
+                            <!-- Leaflet map will be initialized here -->
+                        </div>
+                        <div class="map-controls">
+                            <div class="map-toggle-group">
+                                <button id="standard-view" class="map-toggle-btn active" title="Standard View">🗺️</button>
+                                <button id="accessibility-view" class="map-toggle-btn" title="Accessibility View">♿</button>
+                                <button id="satellite-view" class="map-toggle-btn" title="Satellite View">🛰️</button>
+                            </div>
+                        </div>
+                        <div class="map-legend">
+                            <div class="legend-item">
+                                <span class="legend-color accessible-route"></span>
+                                <span>Accessible path</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color potential-obstacles"></span>
+                                <span>Potential obstacles</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-marker start-marker"></span>
+                                <span>Start location</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-marker end-marker"></span>
+                                <span>Destination</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Route Results Panel -->
+                    <div id="route-results" class="route-results-panel">
+                        <!-- Results will be populated by JavaScript -->
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- Modals -->
+        <div id="obstacle-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>🚧 Report Accessibility Obstacle</h3>
+                    <button class="close-btn" id="close-obstacle-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="obstacle-form">
+                        <div class="form-group">
+                            <label>Location</label>
+                            <div class="coordinate-inputs">
+                                <input type="number" id="obstacle-lat" placeholder="Latitude" step="any" required>
+                                <input type="number" id="obstacle-lon" placeholder="Longitude" step="any" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="obstacle-type">Obstacle Type</label>
+                            <select id="obstacle-type" required>
+                                <option value="">Select type...</option>
+                                <option value="stairs">Stairs</option>
+                                <option value="construction">Construction</option>
+                                <option value="broken_surface">Broken Surface</option>
+                                <option value="narrow_path">Narrow Path</option>
+                                <option value="steep_slope">Steep Slope</option>
+                                <option value="blocked_access">Blocked Access</option>
+                                <option value="temporary_barrier">Temporary Barrier</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="obstacle-severity">Severity</label>
+                            <select id="obstacle-severity" required>
+                                <option value="">Select severity...</option>
+                                <option value="low">Low - Minor inconvenience</option>
+                                <option value="medium">Medium - Moderate challenge</option>
+                                <option value="high">High - Significant barrier</option>
+                                <option value="critical">Critical - Impassable</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="obstacle-description">Description</label>
+                            <textarea id="obstacle-description" rows="3" placeholder="Describe the obstacle and its impact on accessibility..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <h4>Affects:</h4>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="affects-wheelchair" checked>
+                                    <span class="checkmark"></span>
+                                    Wheelchair users
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="affects-visually-impaired">
+                                    <span class="checkmark"></span>
+                                    Visually impaired
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="affects-mobility-aid" checked>
+                                    <span class="checkmark"></span>
+                                    Mobility aid users
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="secondary-btn" id="cancel-obstacle">Cancel</button>
+                            <button type="submit" class="primary-btn">Report Obstacle</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Modal -->
+        <div id="analytics-modal" class="modal" style="display: none;">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3>📊 Analytics Dashboard</h3>
+                    <button class="close-btn" id="close-analytics-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="analytics-content">
+                        <!-- Analytics content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <!-- Mapbox GL JS for enhanced routing -->
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js'></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="src/services/api.js?v=10"></script>
+    <script src="src/components/InteractiveMap.js?v=8"></script>
+    <script src="src/components/RouteDisplay.js?v=8"></script>
+    <script src="src/components/RouteInfoEnhancer.js?v=1"></script>
+    <script src="src/components/ObstacleReporter.js?v=8"></script>
+    <script src="src/components/Analytics.js?v=8"></script>
+    <script src="src/app.js?v=10"></script>
+</body>
+</html>
