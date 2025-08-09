@@ -212,6 +212,21 @@ body {
     overflow: hidden;
 }
 
+/* Map area sizing */
+.map-display-area { flex: 1; min-height: 65vh; position: relative; }
+.map-container, #map-container { width: 100%; height: 100%; }
+
+/* Ensure map container fills parent without needing manual resize */
+#map-display { position: relative; }
+#map-container { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Hide legend and extraneous controls */
+.map-legend { display: none !important; }
+.map-controls { display: none !important; }
+
+/* Hide Mapbox control buttons in top-right only (remove other blanket hides) */
+.mapboxgl-ctrl-top-right { display: none !important; }
+
 /* Sidebar - More space for inputs */
 .sidebar {
     width: 450px; /* Increased from 380px to 450px for better spacing */
@@ -246,7 +261,7 @@ body {
 /* Map Display Area - Better height management */
 .map-display-area {
     flex: 1;
-    min-height: 50%; /* Ensure map takes at least half the space */
+    min-height: 65vh; /* Increased to fill the section more fully */
     background: var(--white);
     position: relative;
     border-radius: var(--border-radius-lg);
@@ -269,9 +284,9 @@ body {
 
 /* Route Results Panel - Improved visibility and scrolling */
 .route-results-panel {
-    height: 40%; /* Fixed height for consistent visibility */
-    min-height: 250px;
-    max-height: 400px;
+    height: 30%; /* Reduced from 40% to give the map more space */
+    min-height: 220px;
+    max-height: 320px;
     overflow-y: auto;
     background: var(--white);
     border-radius: var(--border-radius-lg);
@@ -838,60 +853,6 @@ body {
     color: var(--white);
 }
 
-/* Map Legend */
-.map-legend {
-    position: absolute;
-    bottom: 15px;
-    left: 15px;
-    background: rgba(255, 255, 255, 0.95);
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius-md);
-    box-shadow: var(--shadow-md);
-    z-index: 1000;
-    max-width: 200px;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-xs);
-    font-size: var(--font-size-sm);
-}
-
-.legend-item:last-child {
-    margin-bottom: 0;
-}
-
-.legend-color {
-    width: 20px;
-    height: 3px;
-    border-radius: 2px;
-}
-
-.legend-color.accessible-route {
-    background: var(--success-green);
-}
-
-.legend-color.potential-obstacles {
-    background: var(--warning-orange);
-}
-
-.legend-marker {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 2px solid var(--white);
-}
-
-.legend-marker.start-marker {
-    background: var(--primary-blue);
-}
-
-.legend-marker.end-marker {
-    background: var(--error-red);
-}
-
 /* Leaflet Customizations */
 .leaflet-container {
     height: 100% !important;
@@ -947,6 +908,16 @@ body {
     background: linear-gradient(135deg, #f0fff4 0%, #e6ffed 100%);
 }
 
+.routing-method-info.grid-network {
+    border-left-color: var(--info-blue);
+    background: linear-gradient(135deg, #e3f2fd 0%, #e1f5fe 100%);
+}
+
+.routing-method-info.grid-aligned {
+    border-left-color: var(--warning-orange);
+    background: linear-gradient(135deg, #fff8e1 0%, #fffde7 100%);
+}
+
 .routing-method-info h4 {
     color: var(--primary-blue);
     margin-bottom: var(--spacing-sm);
@@ -955,6 +926,14 @@ body {
 
 .routing-method-info.road-network h4 {
     color: var(--success-green);
+}
+
+.routing-method-info.grid-network h4 {
+    color: var(--info-blue);
+}
+
+.routing-method-info.grid-aligned h4 {
+    color: var(--warning-orange);
 }
 
 .routing-method-info p {
@@ -1041,6 +1020,10 @@ body {
 
 .route-notification.notification-warning {
     border-left-color: var(--warning-orange);
+}
+
+.route-notification.notification-info {
+    border-left-color: var(--info-blue);
 }
 
 .notification-content {
@@ -1148,6 +1131,223 @@ body {
     gap: var(--spacing-md);
     justify-content: flex-end;
     margin-top: var(--spacing-xl);
+}
+
+/* Navigation Modal Styles */
+.navigation-modal .modal-content {
+    max-width: 600px;
+}
+
+.navigation-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.current-instruction {
+    background: var(--light-gray);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    border-left: 4px solid var(--primary-blue);
+}
+
+.current-instruction h4 {
+    color: var(--primary-blue);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-lg);
+}
+
+.current-instruction p {
+    font-size: var(--font-size-lg);
+    color: var(--darker-gray);
+    margin: 0;
+}
+
+.navigation-progress {
+    text-align: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--medium-gray);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: var(--spacing-sm);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-blue), var(--primary-purple));
+    transition: width var(--transition-base);
+}
+
+.navigation-controls {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+}
+
+.route-summary {
+    background: var(--light-gray);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+}
+
+.route-summary p {
+    margin: var(--spacing-xs) 0;
+    color: var(--darker-gray);
+}
+
+/* Alternatives Modal Styles */
+.alternatives-modal .modal-content {
+    max-width: 700px;
+}
+
+.alternatives-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.alternative-route {
+    border: 2px solid var(--medium-gray);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-lg);
+    transition: all var(--transition-base);
+}
+
+.alternative-route:hover {
+    border-color: var(--primary-blue);
+    box-shadow: var(--shadow-md);
+}
+
+.alternative-route.current-route {
+    border-color: var(--success-green);
+    background: rgba(76, 175, 80, 0.05);
+}
+
+.alternative-route h4 {
+    color: var(--primary-blue);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-lg);
+}
+
+.alternative-route.current-route h4 {
+    color: var(--success-green);
+}
+
+.route-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.route-details p {
+    margin: 0;
+    color: var(--darker-gray);
+    font-size: var(--font-size-sm);
+}
+
+.route-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.feature-tag {
+    background: var(--info-blue);
+    color: var(--white);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+}
+
+.current-route .feature-tag {
+    background: var(--success-green);
+}
+
+/* Current Position Marker */
+.current-position-marker {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Notifications Container */
+.notifications-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    max-width: 400px;
+}
+
+.route-notification {
+    background: var(--white);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--spacing-sm);
+    animation: slideIn 0.3s ease-out;
+}
+
+.route-notification.notification-success {
+    border-left: 4px solid var(--success-green);
+}
+
+.route-notification.notification-warning {
+    border-left: 4px solid var(--warning-orange);
+}
+
+.route-notification.notification-info {
+    border-left: 4px solid var(--info-blue);
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md);
+    gap: var(--spacing-sm);
+}
+
+.notification-icon {
+    font-size: var(--font-size-lg);
+    flex-shrink: 0;
+}
+
+.notification-message {
+    flex: 1;
+    color: var(--darker-gray);
+    font-size: var(--font-size-sm);
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: var(--font-size-lg);
+    cursor: pointer;
+    color: var(--dark-gray);
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all var(--transition-fast);
 }
 
 /* Animations */

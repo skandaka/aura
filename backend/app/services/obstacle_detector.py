@@ -16,7 +16,7 @@ class ObstacleDetector:
     
     def __init__(self):
         self.obstacles_db = self._initialize_sample_obstacles()
-        self.detection_radius = 200.0  # meters
+        self.detection_radius = 400.0  # meters (increased for demo visibility)
         
     def _initialize_sample_obstacles(self) -> Dict[str, Dict]:
         """Initialize sample obstacles for demonstration"""
@@ -104,6 +104,64 @@ class ObstacleDetector:
                 "affects_mobility_aid": True,
                 "estimated_clearance_date": None,
                 "impact_radius": 100.0
+            },
+            # Schaumburg / Woodfield demo obstacles
+            "obs_101": {
+                "id": "obs_101",
+                "location": {"latitude": 42.0414, "longitude": -88.0754},
+                "type": "construction",
+                "severity": "medium",
+                "description": "Sidewalk construction near intersection causing detour.",
+                "reported_at": datetime.now() - timedelta(hours=5),
+                "verified": True,
+                "affects_wheelchair": True,
+                "affects_visually_impaired": True,
+                "affects_mobility_aid": True,
+                "estimated_clearance_date": datetime.now() + timedelta(days=3),
+                "impact_radius": 40.0
+            },
+            "obs_102": {
+                "id": "obs_102",
+                "location": {"latitude": 42.0494, "longitude": -88.0704},
+                "type": "narrow_path",
+                "severity": "low",
+                "description": "Path narrows due to utility work; passable with caution.",
+                "reported_at": datetime.now() - timedelta(days=1),
+                "verified": False,
+                "affects_wheelchair": True,
+                "affects_visually_impaired": False,
+                "affects_mobility_aid": True,
+                "estimated_clearance_date": None,
+                "impact_radius": 20.0
+            },
+            # Added Schaumburg route corridor demo obstacles (near shopping demo)
+            "obs_103": {
+                "id": "obs_103",
+                "location": {"latitude": 42.0389, "longitude": -88.0748},
+                "type": "broken_surface",
+                "severity": "medium",
+                "description": "Uneven sidewalk slabs – reduced smoothness.",
+                "reported_at": datetime.now() - timedelta(hours=8),
+                "verified": True,
+                "affects_wheelchair": True,
+                "affects_visually_impaired": True,
+                "affects_mobility_aid": True,
+                "estimated_clearance_date": None,
+                "impact_radius": 30.0
+            },
+            "obs_104": {
+                "id": "obs_104",
+                "location": {"latitude": 42.0422, "longitude": -88.0622},
+                "type": "construction",
+                "severity": "high",
+                "description": "Temporary construction narrowing path; expect short detour.",
+                "reported_at": datetime.now() - timedelta(hours=3),
+                "verified": True,
+                "affects_wheelchair": True,
+                "affects_visually_impaired": True,
+                "affects_mobility_aid": True,
+                "estimated_clearance_date": datetime.now() + timedelta(days=2),
+                "impact_radius": 45.0
             }
         }
     
@@ -113,7 +171,8 @@ class ObstacleDetector:
         """
         if radius is None:
             radius = self.detection_radius
-            
+        print(f"🔎 Detecting obstacles within {radius}m corridor...")
+        
         obstacles = []
         
         # Calculate route corridor points for more accurate detection
@@ -156,6 +215,7 @@ class ObstacleDetector:
             self._calculate_distance(start.latitude, start.longitude, obs.location.latitude, obs.location.longitude)
         ))
         
+        print(f"✅ Found {len(obstacles)} obstacles along corridor")
         return obstacles
     
     async def get_all_obstacles(self, active_only: bool = True) -> List[ObstacleResponse]:

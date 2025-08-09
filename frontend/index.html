@@ -5,25 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aura: Accessible Urban Route Assistant</title>
     
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin=""/>
-    
-    <!-- Mapbox GL JS -->
+    <!-- Mapbox GL JS CSS (single, unified version) -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css" rel="stylesheet">
     
     <!-- Custom CSS -->
-        <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin=""/>
-    
-    <!-- Mapbox GL JS CSS for enhanced mapping -->
-    <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css' rel='stylesheet' />
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="src/styles/main.css?v=11">
+    <link rel="stylesheet" href="src/styles/main.css?v=12">
     <link rel="manifest" href="public/manifest.json">
     <meta name="theme-color" content="#667eea">
     <meta name="description" content="Advanced accessible urban routing with real-time obstacle detection and comprehensive accessibility analysis">
@@ -221,32 +207,7 @@
                     <!-- Map Display Area -->
                     <div id="map-display" class="map-display-area">
                         <div id="map-container" class="map-container">
-                            <!-- Leaflet map will be initialized here -->
-                        </div>
-                        <div class="map-controls">
-                            <div class="map-toggle-group">
-                                <button id="standard-view" class="map-toggle-btn active" title="Standard View">🗺️</button>
-                                <button id="accessibility-view" class="map-toggle-btn" title="Accessibility View">♿</button>
-                                <button id="satellite-view" class="map-toggle-btn" title="Satellite View">🛰️</button>
-                            </div>
-                        </div>
-                        <div class="map-legend">
-                            <div class="legend-item">
-                                <span class="legend-color accessible-route"></span>
-                                <span>Accessible path</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-color potential-obstacles"></span>
-                                <span>Potential obstacles</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-marker start-marker"></span>
-                                <span>Start location</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-marker end-marker"></span>
-                                <span>Destination</span>
-                            </div>
+                            <!-- Mapbox map will be initialized here -->
                         </div>
                     </div>
 
@@ -347,21 +308,16 @@
         </div>
     </div>
 
-    <!-- Leaflet JavaScript -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-    
-    <!-- Mapbox GL JS for enhanced routing -->
-    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js'></script>
+    <!-- Mapbox GL JS (unified version matching CSS) -->
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
     
     <!-- Custom JavaScript -->
-    <script src="src/services/api.js?v=10"></script>
-    <script src="src/components/InteractiveMap.js?v=8"></script>
-    <script src="src/components/RouteDisplay.js?v=8"></script>
+    <script src="src/services/api.js?v=11"></script>
+    <script src="src/components/MapboxMap.js?v=3"></script>
+    <script src="src/components/RouteDisplay.js?v=10"></script>
     <script src="src/components/RouteInfoEnhancer.js?v=1"></script>
     <script src="src/components/ObstacleReporter.js?v=8"></script>
     <script src="src/components/Analytics.js?v=8"></script>
-    <script src="src/app.js?v=10"></script>
+    <script src="src/app.js?v=11"></script>
 </body>
 </html>

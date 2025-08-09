@@ -17,138 +17,23 @@ class ObstacleReporter {
     setupEventListeners() {
         // Listen for the report obstacle button click
         document.addEventListener('click', (e) => {
-            if (e.target.id === 'reportObstacleBtn') {
-                this.showReportModal();
+            if (e.target && e.target.id === 'report-obstacle-btn') {
+                this.startMapReportFlow();
             }
         });
     }
 
-    // Show the obstacle reporting modal
-    showReportModal() {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>🚧 Report Obstacle</h3>
-                    <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form id="obstacleReportForm">
-                        <div class="form-group">
-                            <label for="obstacleType">Obstacle Type *</label>
-                            <select id="obstacleType" required>
-                                <option value="">Select obstacle type</option>
-                                <option value="construction">🚧 Construction Work</option>
-                                <option value="pothole">🕳️ Pothole/Road Damage</option>
-                                <option value="blocked_sidewalk">🚷 Blocked Sidewalk</option>
-                                <option value="steep_slope">⛰️ Steep Slope/Stairs</option>
-                                <option value="no_curb_cut">🚫 Missing Curb Cut</option>
-                                <option value="debris">🗑️ Debris/Obstruction</option>
-                                <option value="flooding">🌊 Flooding/Water</option>
-                                <option value="poor_lighting">💡 Poor Lighting</option>
-                                <option value="broken_infrastructure">⚠️ Broken Infrastructure</option>
-                                <option value="other">❓ Other</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="obstacleSeverity">Severity Level *</label>
-                            <select id="obstacleSeverity" required>
-                                <option value="">Select severity</option>
-                                <option value="low">🟢 Low - Minor inconvenience</option>
-                                <option value="medium">🟡 Medium - Significant difficulty</option>
-                                <option value="high">🟠 High - Major barrier</option>
-                                <option value="critical">🔴 Critical - Completely inaccessible</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="obstacleLocation">Location *</label>
-                            <div class="location-input-group">
-                                <div class="coordinate-inputs">
-                                    <input type="number" id="obstacleLat" placeholder="Latitude" step="any" required>
-                                    <input type="number" id="obstacleLng" placeholder="Longitude" step="any" required>
-                                </div>
-                                <button type="button" class="secondary-btn" onclick="obstacleReporter.getCurrentLocation()">
-                                    📍 Use Current Location
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="obstacleDescription">Description *</label>
-                            <textarea id="obstacleDescription" placeholder="Please provide details about the obstacle, its impact on accessibility, and any additional context..." rows="4" required></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="affectedUsers">Affected User Groups</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" value="wheelchair">
-                                    <span class="checkmark"></span>
-                                    Wheelchair Users
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" value="mobility_aid">
-                                    <span class="checkmark"></span>
-                                    Mobility Aid Users (walkers, canes)
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" value="visual_impairment">
-                                    <span class="checkmark"></span>
-                                    Users with Visual Impairments
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" value="hearing_impairment">
-                                    <span class="checkmark"></span>
-                                    Users with Hearing Impairments
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" value="elderly">
-                                    <span class="checkmark"></span>
-                                    Elderly Users
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" value="families">
-                                    <span class="checkmark"></span>
-                                    Families with Strollers
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="reporterContact">Contact Information (Optional)</label>
-                            <input type="email" id="reporterContact" placeholder="Email for follow-up (optional)">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="urgentReport">
-                                <span class="checkmark"></span>
-                                This is an urgent safety concern
-                            </label>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="secondary-btn" onclick="this.closest('.modal').remove()">
-                        Cancel
-                    </button>
-                    <button type="submit" class="primary-btn" onclick="obstacleReporter.submitReport(event)">
-                        📤 Submit Report
-                    </button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-        
-        // Focus on the first input
-        setTimeout(() => {
-            document.getElementById('obstacleType').focus();
-        }, 100);
+    // Start the map report flow
+    startMapReportFlow() {
+        if (!window.mapboxMap || !window.mapboxMap.isAvailable()) {
+            alert('Map not ready yet.');
+            return;
+        }
+        window.mapboxMap.enableReportMode();
     }
+
+    // Keep previous functions for compatibility but not used in new flow
+    showReportModal() { this.startMapReportFlow(); }
 
     // Get current location for obstacle reporting
     getCurrentLocation() {
@@ -552,6 +437,9 @@ obstacleStyles.textContent = `
 `;
 
 document.head.appendChild(obstacleStyles);
+
+// Preserve global ref
+window.obstacleReporter = new ObstacleReporter();
 
 // Export the ObstacleReporter class
 window.ObstacleReporter = ObstacleReporter;

@@ -7,7 +7,10 @@ httpx>=0.25.0
 aiofiles>=23.0.0
 jinja2>=3.1.0
 
-# Geospatial and routing dependencies
+# Optional geospatial helpers
 geopy>=2.4.0
 haversine>=2.8.0
 networkx>=3.2.0
+
+# Load .env at startup
+python-dotenv>=1.0.0

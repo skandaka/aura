@@ -12,6 +12,10 @@ from fastapi.responses import HTMLResponse, FileResponse
 import os
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from project .env (for MAPBOX_API_KEY, etc.)
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 
 # Add the app directory to the Python path
 sys.path.append(str(Path(__file__).parent / "app"))

@@ -2,8 +2,8 @@
 
 class ApiService {
     constructor() {
-        // For development, use explicit port 8003 where backend is running
-        this.baseUrl = 'http://localhost:8003';
+        // Use same-origin backend served by FastAPI (fixes 8003 mismatch)
+        this.baseUrl = window.location.origin;
         this.apiBase = '/api';
     }
 
@@ -53,7 +53,7 @@ class ApiService {
 
     // Report obstacle
     async reportObstacle(obstacleData) {
-        return this.request('/obstacles', {
+        return this.request('/obstacles/report', {
             method: 'POST',
             body: JSON.stringify(obstacleData)
         });
@@ -62,10 +62,9 @@ class ApiService {
     // Get obstacles in area
     async getObstacles(bounds) {
         const params = new URLSearchParams({
-            lat_min: bounds.lat_min,
-            lat_max: bounds.lat_max,
-            lng_min: bounds.lng_min,
-            lng_max: bounds.lng_max
+            lat: bounds.lat,
+            lon: bounds.lon,
+            radius: bounds.radius || 1000
         });
         
         return this.request(`/obstacles?${params}`);

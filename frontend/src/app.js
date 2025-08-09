@@ -20,8 +20,6 @@ class AuraApp {
     async init() {
         console.log('🚀 Initializing Aura app...');
         
-        // Add debug panel
-        this.addDebugPanel();
         this.debug('App initialization started');
         
         try {
@@ -55,36 +53,8 @@ class AuraApp {
         }
     }
 
-    // Add debug panel for troubleshooting
-    addDebugPanel() {
-        const debugPanel = document.createElement('div');
-        debugPanel.id = 'debug-panel';
-        debugPanel.style.cssText = `
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            width: 300px;
-            height: 200px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 10px;
-            overflow-y: auto;
-            z-index: 10000;
-        `;
-        debugPanel.innerHTML = '<div style="color: #4CAF50; font-weight: bold;">Debug Console:</div>';
-        document.body.appendChild(debugPanel);
-        this.debugPanel = debugPanel;
-    }
-
     debug(message) {
-        if (this.debugPanel) {
-            const time = new Date().toTimeString().split(' ')[0];
-            this.debugPanel.innerHTML += `<div>${time}: ${message}</div>`;
-            this.debugPanel.scrollTop = this.debugPanel.scrollHeight;
-        }
+        // Simplified: log only (no DOM panel)
         console.log(message);
     }
 
@@ -101,7 +71,7 @@ class AuraApp {
             icon = '✅';
             className = 'notification-success';
         } else {
-            message = '📍 Using direct routing - General direction guidance only';
+            message = '📍 Using simplified routing - General direction guidance only';
             icon = '⚠️';
             className = 'notification-warning';
         }
@@ -172,58 +142,26 @@ class AuraApp {
 
     // Initialize all components
     async initializeComponents() {
+        this.debug('Initializing components...');
         try {
-            // Wait for all scripts to load with retry mechanism
-            let retries = 0;
-            const maxRetries = 10;
-            
-            while (typeof RouteDisplay === 'undefined' && retries < maxRetries) {
-                console.log(`🔄 Waiting for RouteDisplay class... (attempt ${retries + 1}/${maxRetries})`);
-                this.debug(`🔄 Waiting for RouteDisplay class... (attempt ${retries + 1}/${maxRetries})`);
-                await new Promise(resolve => setTimeout(resolve, 200)); // Wait 200ms
-                retries++;
-            }
-            
-            // Final check
-            if (typeof RouteDisplay === 'undefined') {
-                console.error('❌ RouteDisplay class not found after retries!');
-                this.debug('❌ RouteDisplay class not found after retries!');
-                return;
-            }
-            
-            // Initialize route display
-            console.log('🔧 Creating RouteDisplay instance...');
-            this.debug('🔧 Creating RouteDisplay instance...');
+            // Route display uses Mapbox only
             this.routeDisplay = new RouteDisplay();
-            console.log('✅ RouteDisplay component initialized');
-            this.debug('✅ RouteDisplay component created');
             
-            // Verify the instance was created
-            if (!this.routeDisplay) {
-                console.error('❌ RouteDisplay instance is null!');
-                this.debug('❌ RouteDisplay instance is null!');
-                return;
+            // Initialize Mapbox map early
+            if (typeof MapboxMap === 'function') {
+                if (!window.mapboxMap) window.mapboxMap = new MapboxMap();
+                await window.mapboxMap.init();
             }
             
-            // Initialize interactive map
-            this.routeDisplay.initializeMap();
-            console.log('✅ Interactive map initialized');
-            
-            // Initialize obstacle reporter
+            // Initialize other components
             this.obstacleReporter = new ObstacleReporter();
-            console.log('✅ ObstacleReporter component initialized');
-            
-            // Initialize analytics
             this.analytics = new Analytics();
-            console.log('✅ Analytics component initialized');
             
-            // Make components globally available
-            window.routeDisplay = this.routeDisplay;
-            window.obstacleReporter = this.obstacleReporter;
-            window.analytics = this.analytics;
-            
+            this.debug('All components initialized');
+            return true;
         } catch (error) {
             console.error('❌ Error initializing components:', error);
+            return false;
         }
     }
 
@@ -286,9 +224,18 @@ class AuraApp {
         // Range input updates
         document.addEventListener('input', (e) => {
             if (e.target.type === 'range') {
-                const valueDisplay = document.getElementById(e.target.id + 'Value');
-                if (valueDisplay) {
-                    valueDisplay.textContent = e.target.value;
+                // Handle max-slope range input specifically
+                if (e.target.id === 'max-slope') {
+                    const valueDisplay = document.getElementById('slope-value');
+                    if (valueDisplay) {
+                        valueDisplay.textContent = e.target.value + '%';
+                    }
+                } else {
+                    // Handle other range inputs generically
+                    const valueDisplay = document.getElementById(e.target.id + 'Value');
+                    if (valueDisplay) {
+                        valueDisplay.textContent = e.target.value;
+                    }
                 }
             }
         });
@@ -429,39 +376,16 @@ class AuraApp {
 
             // Call backend API
             this.debug('🌐 Calling backend API...');
-            const response = await fetch('/api/calculate-route', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
-            });
+            // Use centralized ApiService with timeout to avoid hanging forever
+            const routeData = await window.apiService.calculateRoute(formData);
 
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
-
-            const routeData = await response.json();
             console.log('✅ Route calculated successfully:', routeData);
             this.debug('✅ Route data received');
-
-            // Show routing method notification
-            if (window.routeInfoEnhancer && routeData.route_summary) {
-                const routingEngine = routeData.route_summary.routing_engine || 'simple';
-                window.routeInfoEnhancer.showRoutingMethodNotification(routingEngine);
-            }
 
             // Enhance route display with routing method information
             if (window.routeInfoEnhancer) {
                 const routingMethod = window.routeInfoEnhancer.enhanceRouteDisplay(routeData);
-                
-                // Show notification about routing method
-                if (routeData.route_summary) {
-                    const provider = routeData.route_summary.routing_provider;
-                    const usesRealRoads = routeData.route_summary.uses_real_roads;
-                    
-                    this.showRoutingNotification(provider, usesRealRoads);
-                }
+                // RouteInfoEnhancer now handles all notifications - no need for duplicate
             }
 
             // Display results
@@ -567,6 +491,21 @@ class AuraApp {
         
         // Set end location
         this.setLocationData('end', demo.end.address, demo.end.lat, demo.end.lng);
+
+        // Clear any existing route display to force fresh calculation
+        if (this.routeDisplay && this.routeDisplay.currentRoute) {
+            this.routeDisplay.currentRoute = null;
+            // Clear route results panel
+            const resultsPanel = document.getElementById('route-results');
+            if (resultsPanel) {
+                resultsPanel.innerHTML = '';
+            }
+            // Show welcome message again
+            const welcomeMessage = document.getElementById('welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.style.display = 'block';
+            }
+        }
 
         // Show notification
         this.showNotification(`Demo route loaded: ${demo.description}`, 'success');
@@ -1053,33 +992,20 @@ document.head.appendChild(appStyles);
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 DOM loaded, waiting for all scripts...');
     
-    // Wait for all external scripts to load
-    let retries = 0;
-    const maxRetries = 20;
-    
+    let retries = 0; const maxRetries = 20;
     while (retries < maxRetries) {
         const allScriptsLoaded = (
             typeof RouteDisplay !== 'undefined' &&
             typeof ObstacleReporter !== 'undefined' &&
             typeof Analytics !== 'undefined' &&
-            typeof L !== 'undefined' // Leaflet
+            typeof mapboxgl !== 'undefined' // Mapbox
         );
-        
-        if (allScriptsLoaded) {
-            console.log('✅ All scripts loaded successfully');
-            break;
-        }
-        
-        console.log(`🔄 Waiting for scripts... (${retries + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        if (allScriptsLoaded) break;
+        await new Promise(r => setTimeout(r, 100));
         retries++;
     }
+    if (retries >= maxRetries) console.error('❌ Some scripts failed to load');
     
-    if (retries >= maxRetries) {
-        console.error('❌ Some scripts failed to load after waiting');
-    }
-    
-    // Initialize the app
     window.app = new AuraApp();
     window.app.init();
 });

@@ -8,11 +8,13 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 import time
 from datetime import datetime
+import asyncio
 
 from ..models.database import get_db
 from ..models.schemas import (
     RouteRequest, Route, ObstacleReport, ObstacleResponse,
-    AnalyticsResponse, HealthCheck, SuccessResponse, ErrorResponse
+    AnalyticsResponse, HealthCheck, SuccessResponse, ErrorResponse,
+    AmenityResponse, Coordinates, AmenityType
 )
 from ..services.routing_engine import AdvancedRoutingEngine
 from ..services.obstacle_detector import ObstacleDetector
@@ -26,6 +28,46 @@ routing_engine = AdvancedRoutingEngine()
 obstacle_detector = ObstacleDetector()
 accessibility_analyzer = AccessibilityAnalyzer()
 
+# In-memory demo amenities (could be replaced with DB)
+DEMO_AMENITIES = [
+    AmenityResponse(id="am_001", name="Rest Spot", type=AmenityType.REST_SPOT, description="Bench with shade", location=Coordinates(latitude=40.7582, longitude=-73.9855)),
+    AmenityResponse(id="am_002", name="Audio Crosswalk", type=AmenityType.AUDIO_CROSSWALK, description="Audible pedestrian signal", location=Coordinates(latitude=40.7510, longitude=-73.9900)),
+    AmenityResponse(id="am_003", name="Elevator", type=AmenityType.ELEVATOR, description="Street-to-platform elevator", location=Coordinates(latitude=40.7506, longitude=-73.9935)),
+    # Schaumburg / Woodfield area
+    AmenityResponse(id="am_101", name="Rest Spot", type=AmenityType.REST_SPOT, description="Bench near Woodfield Mall", location=Coordinates(latitude=42.0466, longitude=-88.0371)),
+    AmenityResponse(id="am_102", name="Audio Crosswalk", type=AmenityType.AUDIO_CROSSWALK, description="Audible signal at Higgins Rd", location=Coordinates(latitude=42.0339, longitude=-88.0837)),
+]
+
+@router.get("/amenities", response_model=List[AmenityResponse])
+async def get_amenities(lat: Optional[float] = None, lon: Optional[float] = None, radius: Optional[float] = 1500.0):
+    """Return amenity points like rest spots and audio crosswalks. If lat/lon provided, filter by radius (meters)."""
+    def haversine(lat1, lon1, lat2, lon2):
+        from math import radians, sin, cos, asin, sqrt
+        R = 6371000
+        lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        c = 2 * asin(sqrt(a))
+        return R * c
+
+    if lat is None or lon is None:
+        print("📍 Returning all amenities (no filtering parameters provided)")
+        return DEMO_AMENITIES
+
+    filtered = []
+    for a in DEMO_AMENITIES:
+        d = haversine(lat, lon, a.location.latitude, a.location.longitude)
+        if d <= (radius or 1500.0):
+            filtered.append(a)
+    print(f"📍 Amenities request center=({lat:.4f},{lon:.4f}) radius={radius} -> {len(filtered)} matched")
+    return filtered
+
+@router.get("/amenities/all", response_model=List[AmenityResponse])
+async def get_all_amenities():
+    """Return all demo amenities unfiltered (debug/diagnostic)."""
+    return DEMO_AMENITIES
+
 @router.post("/calculate-route", response_model=Route)
 async def calculate_route(request: RouteRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
@@ -35,8 +77,12 @@ async def calculate_route(request: RouteRequest, background_tasks: BackgroundTas
         print(f"🔍 Received route request: {request}")
         start_time = time.time()
         
-        # Calculate the route
-        route = await routing_engine.calculate_route(request)
+        # Calculate the route with a hard timeout to avoid hanging requests
+        TIMEOUT_SECONDS = 20
+        try:
+            route = await asyncio.wait_for(routing_engine.calculate_route(request), timeout=TIMEOUT_SECONDS)
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail=f"Route calculation timed out after {TIMEOUT_SECONDS}s")
         
         # Log analytics in background
         background_tasks.add_task(
@@ -63,7 +109,7 @@ async def calculate_route(request: RouteRequest, background_tasks: BackgroundTas
             str(e)
         )
         
-        raise HTTPException(status_code=500, detail=f"Route calculation failed: {str(e)}")
+        raise HTTPException(status_code=getattr(e, 'status_code', 500), detail=f"Route calculation failed: {str(e)}")
 
 @router.get("/route/{route_id}")
 async def get_route(route_id: str):

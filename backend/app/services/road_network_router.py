@@ -422,7 +422,10 @@ class RoadNetworkRouter:
             "obstacle_count": len(obstacles),
             "elevation_gain": self._calculate_elevation_gain(route_points),
             "surface_types": self._analyze_surface_types(route_points),
-            "road_types": self._analyze_road_types(path)
+            "road_types": self._analyze_road_types(path),
+            "routing_engine": "road_network",
+            "routing_provider": "Road Network",
+            "uses_real_roads": True
         }
         
         # Create complete route object

@@ -7,10 +7,7 @@ class RouteDisplay {
             this.currentRoute = null;
             this.alternatives = [];
             this.isLoading = false;
-            this.map = null;
             this.mapView = 'standard';
-            this.routeLayer = null;
-            this.markersLayer = null;
             console.log('🔧 RouteDisplay properties initialized');
             this.init();
             console.log('✅ RouteDisplay constructor completed successfully');
@@ -101,80 +98,38 @@ class RouteDisplay {
         }
     }
 
-    // Initialize map (called from app.js)
+    // Initialize map using Mapbox only
     initializeMap() {
-        console.log('✅ Map initialization called');
-        
-        // Initialize Leaflet map
-        const mapContainer = document.getElementById('map-container');
-        if (mapContainer && typeof L !== 'undefined') {
-            // Clear any existing map
-            if (this.map) {
-                this.map.remove();
+        console.log('✅ Map initialization (Mapbox) called');
+        if (!window.mapboxMap) {
+            if (typeof MapboxMap === 'function') {
+                window.mapboxMap = new MapboxMap();
+            } else {
+                console.error('❌ MapboxMap not available');
+                return false;
             }
-            
-            // Create map centered on Schaumburg area with appropriate zoom
-            this.map = L.map('map-container', {
-                zoomControl: true,
-                attributionControl: true,
-                preferCanvas: true
-            }).setView([42.0330, -88.0831], 12); // Good zoom level for city area
-
-            // Add tile layer (OpenStreetMap)
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19,
-                minZoom: 8
-            }).addTo(this.map);
-
-            // Store layer groups for route elements
-            this.routeLayer = L.layerGroup().addTo(this.map);
-            this.markersLayer = L.layerGroup().addTo(this.map);
-            
-            // Wait for map to fully load
-            this.map.whenReady(() => {
-                console.log('✅ Leaflet map fully loaded and ready');
-                // Invalidate size to ensure proper rendering
-                setTimeout(() => {
-                    this.map.invalidateSize();
-                }, 100);
-            });
-            
-            console.log('✅ Leaflet map initialized successfully');
-            return true;
-        } else {
-            console.error('❌ Map container not found or Leaflet not loaded');
-            return false;
         }
+        return !!window.mapboxMap && !!window.mapboxMap.init && (typeof mapboxgl !== 'undefined');
     }
 
-    // Display route results
+    // Display route using Mapbox renderer
     displayRoute(routeData) {
         this.currentRoute = routeData;
         this.isLoading = false;
-        
-        // Re-enable the calculate button
         this.enableCalculateButton();
-        
-        // Remove loading overlay
-        const loadingOverlay = document.getElementById('map-loading-overlay');
-        if (loadingOverlay) {
-            loadingOverlay.remove();
-        }
-        
-        // Hide welcome message
+        const overlay = document.getElementById('map-loading-overlay');
+        if (overlay) overlay.remove();
         const welcomeMessage = document.getElementById('welcome-message');
-        if (welcomeMessage) {
-            welcomeMessage.style.display = 'none';
+        if (welcomeMessage) welcomeMessage.style.display = 'none';
+        if (!this.initializeMap()) {
+            console.error('❌ Mapbox initialization failed');
+            return;
         }
-        
-        // Initialize map if not already done
-        if (!this.map) {
-            this.initializeMap();
+        try {
+            window.mapboxMap.displayRoute(routeData);
+        } catch (e) {
+            console.error('❌ Error rendering mapbox route:', e);
         }
-        
-        // Display route on map
-        this.displayMap(routeData);
         
         // Calculate accessibility score color and display value
         const accessibilityScore = routeData.accessibility_score?.overall_score || routeData.accessibility_score || 0;
@@ -185,7 +140,7 @@ class RouteDisplay {
         const distance = routeData.total_distance?.toFixed(2) || '2.1';
         const obstacleCount = routeData.route_summary?.obstacle_count || routeData.warnings?.length || 0;
         
-        // Display results in panel
+        // Display results in panel (no nav/alternatives buttons)
         const resultsPanel = document.getElementById('route-results');
         if (resultsPanel) {
             resultsPanel.innerHTML = `
@@ -227,181 +182,12 @@ class RouteDisplay {
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="route-actions">
-                        <button class="primary-btn" onclick="window.routeDisplay.startNavigation()">
-                            🧭 Start Navigation
-                        </button>
-                        <button class="secondary-btn" onclick="window.routeDisplay.showAlternatives()">
-                            🔄 Alternative Routes
-                        </button>
-                    </div>
                 </div>
             `;
         }
     }
 
-    // Display interactive map
-    displayMap(routeData) {
-        if (!this.map) {
-            console.error('❌ Map not initialized');
-            // Try to initialize it
-            if (!this.initializeMap()) {
-                return;
-            }
-        }
-
-        // Clear existing route and markers
-        if (this.routeLayer) this.routeLayer.clearLayers();
-        if (this.markersLayer) this.markersLayer.clearLayers();
-
-        // Route coordinates with detailed waypoints for guidance
-        const startCoords = [42.0330, -88.0831]; // Schaumburg
-        const endCoords = [42.0466, -88.0371];   // Woodfield Mall
-        
-        // Detailed route with turn-by-turn waypoints
-        const detailedRoute = [
-            { coords: startCoords, instruction: "Start at Schaumburg Train Station", type: "start" },
-            { coords: [42.0340, -88.0820], instruction: "Head east on Schaumburg Rd", type: "straight" },
-            { coords: [42.0350, -88.0780], instruction: "Turn right on Meacham Rd", type: "turn-right" },
-            { coords: [42.0380, -88.0750], instruction: "Continue straight (accessible sidewalk)", type: "straight" },
-            { coords: [42.0400, -88.0680], instruction: "Turn left on Golf Rd", type: "turn-left" },
-            { coords: [42.0420, -88.0650], instruction: "Continue on Golf Rd", type: "straight" },
-            { coords: [42.0440, -88.0550], instruction: "Turn right on Woodfield Rd", type: "turn-right" },
-            { coords: [42.0450, -88.0450], instruction: "Approaching Woodfield Mall", type: "straight" },
-            { coords: endCoords, instruction: "Arrive at Woodfield Mall entrance", type: "end" }
-        ];
-
-        // Create route line segments with different colors for different road types
-        const routeCoords = detailedRoute.map(point => point.coords);
-        
-        // Main route line
-        const routeLine = L.polyline(routeCoords, {
-            color: '#667eea',
-            weight: 8,
-            opacity: 0.8,
-            smoothFactor: 1,
-            className: 'main-route-line'
-        }).bindPopup(`
-            <b>Accessible Route</b><br>
-            Distance: 2.1 km<br>
-            Accessibility Score: 85/100<br>
-            Estimated Time: 15 minutes
-        `);
-
-        // Add route to layer
-        this.routeLayer.addLayer(routeLine);
-
-        // Add turn-by-turn direction markers
-        detailedRoute.forEach((point, index) => {
-            let markerIcon, markerColor;
-            
-            switch(point.type) {
-                case 'start':
-                    markerIcon = '🚶‍♂️';
-                    markerColor = '#4CAF50';
-                    break;
-                case 'end':
-                    markerIcon = '��️';
-                    markerColor = '#F44336';
-                    break;
-                case 'turn-right':
-                    markerIcon = '➡️';
-                    markerColor = '#2196F3';
-                    break;
-                case 'turn-left':
-                    markerIcon = '⬅️';
-                    markerColor = '#2196F3';
-                    break;
-                case 'straight':
-                    markerIcon = '⬆️';
-                    markerColor = '#FF9800';
-                    break;
-                default:
-                    markerIcon = '📍';
-                    markerColor = '#9E9E9E';
-            }
-
-            const directionMarker = L.marker(point.coords, {
-                icon: L.divIcon({
-                    className: 'direction-marker',
-                    html: `<div style="
-                        background: ${markerColor}; 
-                        color: white; 
-                        border-radius: 50%; 
-                        width: ${point.type === 'start' || point.type === 'end' ? '35px' : '25px'}; 
-                        height: ${point.type === 'start' || point.type === 'end' ? '35px' : '25px'}; 
-                        display: flex; 
-                        align-items: center; 
-                        justify-content: center; 
-                        font-size: ${point.type === 'start' || point.type === 'end' ? '16px' : '12px'}; 
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                        border: 2px solid white;
-                    ">${markerIcon}</div>`,
-                    iconSize: [point.type === 'start' || point.type === 'end' ? 35 : 25, point.type === 'start' || point.type === 'end' ? 35 : 25],
-                    iconAnchor: [point.type === 'start' || point.type === 'end' ? 17.5 : 12.5, point.type === 'start' || point.type === 'end' ? 17.5 : 12.5]
-                })
-            }).bindPopup(`
-                <b>Step ${index + 1}</b><br>
-                ${point.instruction}
-            `);
-            
-            this.markersLayer.addLayer(directionMarker);
-        });
-
-        // Add accessibility features along the route
-        const accessibilityFeatures = [
-            { coords: [42.0350, -88.0780], type: 'Curb Cut', icon: '♿', color: '#4CAF50', description: 'Accessible curb ramp' },
-            { coords: [42.0380, -88.0750], type: 'Wide Sidewalk', icon: '🚶‍♀️', color: '#2196F3', description: 'Extra wide sidewalk (8ft)' },
-            { coords: [42.0420, -88.0650], type: 'Good Lighting', icon: '💡', color: '#FF9800', description: 'Well-lit area' },
-            { coords: [42.0440, -88.0550], type: 'Accessible Crossing', icon: '🚸', color: '#4CAF50', description: 'Audio signal crossing' },
-            { coords: [42.0450, -88.0450], type: 'Rest Area', icon: '🪑', color: '#9C27B0', description: 'Bench available' }
-        ];
-
-        accessibilityFeatures.forEach(feature => {
-            const featureMarker = L.marker(feature.coords, {
-                icon: L.divIcon({
-                    className: 'accessibility-feature',
-                    html: `<div style="
-                        background: ${feature.color}; 
-                        color: white; 
-                        border-radius: 50%; 
-                        width: 20px; 
-                        height: 20px; 
-                        display: flex; 
-                        align-items: center; 
-                        justify-content: center; 
-                        font-size: 10px; 
-                        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-                        border: 1px solid white;
-                    ">${feature.icon}</div>`,
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                })
-            }).bindPopup(`
-                <b>${feature.type}</b><br>
-                ${feature.description}
-            `);
-            
-            this.routeLayer.addLayer(featureMarker);
-        });
-
-        // Fit map to show the entire route with padding
-        const group = new L.featureGroup([...this.routeLayer.getLayers(), ...this.markersLayer.getLayers()]);
-        this.map.fitBounds(group.getBounds().pad(0.05));
-
-        console.log('✅ Route with guidance displayed on map');
-    }
-
-    // Get score class for styling
-    getScoreClass(score) {
-        if (score >= 80) return 'excellent';
-        if (score >= 60) return 'good';
-        if (score >= 40) return 'fair';
-        return 'poor';
-    }
-
-    // Re-enable the calculate button
+    // Keep UI helpers
     enableCalculateButton() {
         const calculateBtn = document.getElementById('calculate-btn');
         if (calculateBtn) {
@@ -411,6 +197,14 @@ class RouteDisplay {
             if (btnText) btnText.style.display = 'inline';
             if (btnSpinner) btnSpinner.style.display = 'none';
         }
+    }
+
+    // Get score class for styling
+    getScoreClass(score) {
+        if (score >= 80) return 'excellent';
+        if (score >= 60) return 'good';
+        if (score >= 40) return 'fair';
+        return 'poor';
     }
 
     // Show error state
@@ -457,22 +251,30 @@ class RouteDisplay {
         console.log(`Switched to ${view} view`);
     }
 
-    // Show alternatives
-    showAlternatives() {
-        if (!this.currentRoute || !this.currentRoute.alternatives) {
-            alert('No alternative routes available');
-            return;
-        }
-        console.log('Showing alternative routes');
-    }
+    // Removed: Start navigation and Alternatives (no-op stubs to avoid errors if referenced)
+    startNavigation() { /* removed per request */ }
+    nextInstruction() { /* removed per request */ }
+    previousInstruction() { /* removed per request */ }
+    updateNavigationDisplay() { /* removed per request */ }
+    showAlternatives() { /* removed per request */ }
+    selectAlternativeRoute(/* routeType */) { /* removed per request */ }
 
-    // Start navigation
-    startNavigation() {
-        if (!this.currentRoute) {
-            alert('No route available for navigation');
-            return;
+    createNotificationContainer() {
+        let container = document.getElementById('notifications');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'notifications';
+            container.className = 'notifications-container';
+            container.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                max-width: 400px;
+            `;
+            document.body.appendChild(container);
         }
-        console.log('Starting navigation');
+        return container;
     }
 }
 

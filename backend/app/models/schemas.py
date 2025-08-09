@@ -47,6 +47,14 @@ class TimePreference(str, Enum):
     MOST_ACCESSIBLE = "most_accessible"
     BALANCED = "balanced"
 
+# New: Amenities
+class AmenityType(str, Enum):
+    REST_SPOT = "rest_spot"
+    AUDIO_CROSSWALK = "audio_crosswalk"
+    ELEVATOR = "elevator"
+    RAMP = "ramp"
+    ACCESSIBLE_RESTROOM = "accessible_restroom"
+
 # Base models
 class Coordinates(BaseModel):
     """Geographic coordinates"""
@@ -131,6 +139,17 @@ class Route(BaseModel):
     route_summary: Dict[str, Any] = {}
     created_at: datetime
     calculation_time_ms: Optional[int] = None
+    # New: obstacles along the route for map rendering
+    obstacles: List['ObstacleResponse'] = []
+
+class AmenityResponse(BaseModel):
+    """Amenity locations like rest spots, audio crosswalks, elevators, etc."""
+    id: str
+    name: str
+    type: AmenityType
+    description: Optional[str] = None
+    location: Coordinates
+    installed_at: Optional[datetime] = None
 
 class ObstacleResponse(BaseModel):
     """Obstacle information response"""
@@ -177,3 +196,6 @@ class SuccessResponse(BaseModel):
     success: bool = True
     message: str
     data: Optional[Dict[str, Any]] = None
+
+# Rebuild models to resolve forward refs now that ObstacleResponse exists
+Route.model_rebuild(force=True)
