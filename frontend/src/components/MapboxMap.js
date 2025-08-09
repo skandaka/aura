@@ -15,13 +15,11 @@ class MapboxMap {
         this.isInitialized = false;
         this.resizeObserver = null;
         
-        // Mapbox configuration (token can be injected at runtime)
         const defaultToken = 'pk.eyJ1Ijoic2thdGUiLCJhIjoiY21kOTlxOW1iMDV1bzJtcHY3bmFobnVmcCJ9.zDBww977UxLmhPDSeZk5Jw';
         this.accessToken = (window.MAPBOX_TOKEN || localStorage.getItem('MAPBOX_TOKEN') || defaultToken);
         this.mapboxAvailable = typeof mapboxgl !== 'undefined';
         this.reportMode = false;
         this.tempReportMarker = null;
-        // Ensure resize handler
         this._boundHandleResize = () => {
             try { this.map && this.map.resize(); } catch {}
         };
@@ -320,8 +318,8 @@ class MapboxMap {
         // Final fallback: fetch all active obstacles if still none
         if (!this.markers.obstacles.length) {
             fetch(`${window.location.origin}/api/obstacles?active_only=true`)
-                .then(r => r.ok ? r.json() : null)
-                .then(list => { if (Array.isArray(list)) { addMarkers(list); console.log(`✅ Loaded ${list.length} global obstacles`); } })
+.then(r => r.ok ? r.json() : null)
+                                .then(list => { if (Array.isArray(list)) { addMarkers(list); console.log(`✅ Loaded ${list.length} global obstacles`); } })                .then(list => { if (Array.isArray(list)) { addMarkers(list); console.log(`✅ Loaded ${list.length} global obstacles`); } })
                 .catch(() => {});
         }
     }

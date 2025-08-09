@@ -1,6 +1,3 @@
-"""
-Database models and configuration for Aura application
-"""
 
 from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, Text, JSON
 from sqlalchemy.ext.declarative import declarative_base
@@ -17,7 +14,6 @@ Base = declarative_base()
 
 # Database Models
 class Route(Base):
-    """Route storage model"""
     __tablename__ = "routes"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -35,7 +31,6 @@ class Route(Base):
     user_id = Column(String(50), nullable=True)
 
 class Obstacle(Base):
-    """Obstacle storage model"""
     __tablename__ = "obstacles"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -54,7 +49,6 @@ class Obstacle(Base):
     is_active = Column(Boolean, default=True)
 
 class UserPreferences(Base):
-    """User preferences storage model"""
     __tablename__ = "user_preferences"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -71,7 +65,6 @@ class UserPreferences(Base):
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 class RouteAnalytics(Base):
-    """Route analytics and usage tracking"""
     __tablename__ = "route_analytics"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -88,11 +81,9 @@ class RouteAnalytics(Base):
     ip_address = Column(String(45), nullable=True)
 
 def create_tables():
-    """Create all database tables"""
     Base.metadata.create_all(bind=engine)
 
 def get_db():
-    """Get database session"""
     db = SessionLocal()
     try:
         yield db

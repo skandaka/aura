@@ -1,7 +1,3 @@
-"""
-OSRM-based routing engine for accurate road/sidewalk routes without API keys
-Uses the public OSRM server (project-osrm.org) for pedestrian routing
-"""
 
 import math
 import asyncio
@@ -20,11 +16,7 @@ from ..services.obstacle_detector import ObstacleDetector
 from ..services.accessibility_analyzer import AccessibilityAnalyzer
 
 class OsrmRoutingEngine:
-    """
-    High-accuracy routing engine using OSRM public server
-    Ensures routes follow actual roads, sidewalks, and intersections
-    """
-    
+
     def __init__(self):
         self.obstacle_detector = ObstacleDetector()
         self.accessibility_analyzer = AccessibilityAnalyzer()
@@ -41,15 +33,12 @@ class OsrmRoutingEngine:
             if not osrm_route:
                 return None
             
-            # Convert OSRM route to our format
             route_points = await self._convert_osrm_route(osrm_route, request)
             
-            # Detect obstacles along the route
             obstacles = await self.obstacle_detector.find_obstacles_along_route(
                 request.start, request.end, radius=200
             )
             
-            # Calculate accessibility score
             accessibility_score = await self.accessibility_analyzer.calculate_comprehensive_score(
                 route_points, request.preferences, obstacles
             )
@@ -151,7 +140,6 @@ class OsrmRoutingEngine:
             return "Start your accessible journey"
         if index == total - 1:
             return "You have arrived at your destination"
-        # Try OSRM steps text
         for step in steps:
             name = step.get('name')
             maneuver = step.get('maneuver', {})

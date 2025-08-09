@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aura: Accessible Urban Route Assistant</title>
     
-    <!-- Mapbox GL JS CSS (single, unified version) -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css" rel="stylesheet">
     
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="src/styles/main.css?v=12">
     <link rel="manifest" href="public/manifest.json">
     <meta name="theme-color" content="#667eea">
@@ -16,16 +14,13 @@
 </head>
 <body>
     <div id="app-root">
-        <!-- Loading Screen -->
         <div id="loading-screen" class="loading-screen">
             <div class="logo">🌟 Aura</div>
             <div class="loading-text">Loading accessible routing platform...</div>
             <div class="loading-spinner"></div>
         </div>
 
-        <!-- Main Application -->
         <div id="main-app" class="main-app" style="display: none;">
-            <!-- Header -->
             <header class="app-header">
                 <div class="header-content">
                     <div class="logo-section">
@@ -36,14 +31,11 @@
                 </div>
             </header>
 
-            <!-- Main Content -->
             <main class="main-content">
-                <!-- Sidebar -->
                 <aside class="sidebar">
                     <div class="route-form-container">
                         <h2 class="section-title">🗺️ Plan Your Route</h2>
                         
-                        <!-- Quick Demo Locations -->
                         <div class="demo-locations">
                             <h3>📍 Quick Demo Routes</h3>
                             <div class="demo-buttons">
@@ -55,7 +47,6 @@
                             <p class="demo-description">Try these sample routes to see Aura in action</p>
                         </div>
 
-                        <!-- Route Form -->
                         <form id="route-form" class="route-form">
                             <div class="form-group">
                                 <label for="start-location">Starting Location</label>
@@ -185,7 +176,6 @@
                             </button>
                         </form>
 
-                        <!-- Obstacle Reporting -->
                         <div class="obstacle-report-section">
                             <button id="report-obstacle-btn" class="secondary-btn">
                                 🚧 Report Obstacle
@@ -194,9 +184,7 @@
                     </div>
                 </aside>
 
-                <!-- Results Area -->
                 <section class="results-area">
-                    <!-- Welcome Message (Compact) -->
                     <div id="welcome-message" class="welcome-message-compact">
                         <div class="welcome-content-compact">
                             <h2>Welcome to Aura! ✨</h2>
@@ -204,22 +192,17 @@
                         </div>
                     </div>
 
-                    <!-- Map Display Area -->
                     <div id="map-display" class="map-display-area">
                         <div id="map-container" class="map-container">
-                            <!-- Mapbox map will be initialized here -->
                         </div>
                     </div>
 
-                    <!-- Route Results Panel -->
                     <div id="route-results" class="route-results-panel">
-                        <!-- Results will be populated by JavaScript -->
                     </div>
                 </section>
             </main>
         </div>
 
-        <!-- Modals -->
         <div id="obstacle-modal" class="modal" style="display: none;">
             <div class="modal-content">
                 <div class="modal-header">
@@ -292,7 +275,6 @@
             </div>
         </div>
 
-        <!-- Analytics Modal -->
         <div id="analytics-modal" class="modal" style="display: none;">
             <div class="modal-content large">
                 <div class="modal-header">
@@ -301,17 +283,14 @@
                 </div>
                 <div class="modal-body">
                     <div id="analytics-content">
-                        <!-- Analytics content will be loaded here -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Mapbox GL JS (unified version matching CSS) -->
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
     
-    <!-- Custom JavaScript -->
     <script src="src/services/api.js?v=11"></script>
     <script src="src/components/MapboxMap.js?v=3"></script>
     <script src="src/components/RouteDisplay.js?v=10"></script>

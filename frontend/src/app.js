@@ -1,64 +1,50 @@
-// Main Application Controller - Coordinates all components and handles app lifecycle
-
 class AuraApp {
     constructor() {
         this.isLoading = true;
         this.currentRoute = null;
         this.preferences = this.loadPreferences();
-        this.isCalculating = false; // Add flag to prevent multiple submissions
-        this.eventListenersSetup = false; // Prevent multiple event listener setup
-        
-        // Initialize components
+        this.isCalculating = false;
+        this.eventListenersSetup = false;
+
         this.routeDisplay = null;
         this.obstacleReporter = null;
         this.analytics = null;
-        
-        // Don't call init() here - it will be called manually after DOM is ready
     }
 
-        // Initialize the app
     async init() {
         console.log('🚀 Initializing Aura app...');
         
         this.debug('App initialization started');
         
         try {
-            // Initialize components first
             await this.initializeComponents();
             this.debug('Components initialized');
             
-            // Setup demo data
             this.setupDemoData();
             this.debug('Demo data setup complete');
             
-            // Setup event listeners after DOM is loaded
             this.setupEventListeners();
             this.debug('Event listeners setup complete');
             
-            // Hide loading screen
             this.hideLoadingScreen();
             
-            // Show demo route after components are ready
             setTimeout(() => {
-                // Only show demo route, don't auto-calculate
                 this.loadDemoLocationOnly();
-            }, 2000); // Increased delay to ensure components are ready
-            
+            }, 2000);
+
             console.log('✅ Aura app initialized successfully');
             this.debug('✅ App initialization complete');
             
         } catch (error) {
             console.error('❌ Error initializing app:', error);
-            this.debug('❌ Error: ' + error.message);
+            this.showError('Failed to initialize application. Please refresh the page.');
         }
     }
 
     debug(message) {
-        // Simplified: log only (no DOM panel)
         console.log(message);
     }
 
-    // Show notification about routing method
     showRoutingNotification(provider, usesRealRoads) {
         let message, icon, className;
         
@@ -79,7 +65,6 @@ class AuraApp {
         this.showNotification(message, icon, className);
     }
 
-    // Generic notification system
     showNotification(message, icon = 'ℹ️', className = 'notification-info') {
         const notificationContainer = document.getElementById('notifications') || this.createNotificationContainer();
         
@@ -95,7 +80,6 @@ class AuraApp {
         
         notificationContainer.appendChild(notification);
         
-        // Auto-remove after 8 seconds
         setTimeout(() => {
             if (notification.parentElement) {
                 notification.remove();
@@ -114,7 +98,6 @@ class AuraApp {
         return container;
     }
 
-    // Show loading screen
     showLoadingScreen() {
         const loadingScreen = document.querySelector('.loading-screen');
         if (loadingScreen) {
@@ -122,7 +105,6 @@ class AuraApp {
         }
     }
 
-    // Hide loading screen
     hideLoadingScreen() {
         const loadingScreen = document.querySelector('.loading-screen');
         const mainApp = document.querySelector('.main-app');
@@ -140,20 +122,16 @@ class AuraApp {
         }
     }
 
-    // Initialize all components
     async initializeComponents() {
         this.debug('Initializing components...');
         try {
-            // Route display uses Mapbox only
             this.routeDisplay = new RouteDisplay();
             
-            // Initialize Mapbox map early
             if (typeof MapboxMap === 'function') {
                 if (!window.mapboxMap) window.mapboxMap = new MapboxMap();
                 await window.mapboxMap.init();
             }
             
-            // Initialize other components
             this.obstacleReporter = new ObstacleReporter();
             this.analytics = new Analytics();
             
@@ -165,24 +143,19 @@ class AuraApp {
         }
     }
 
-    // Setup event listeners
     setupEventListeners() {
-        // Prevent multiple setup
         if (this.eventListenersSetup) {
             this.debug('⚠️ Event listeners already setup, skipping...');
             return;
         }
         
-        // Form submission
         const routeForm = document.getElementById('route-form');
         if (routeForm) {
             this.debug('✅ Route form found, adding event listener');
-            // Remove any existing listeners first
             routeForm.removeEventListener('submit', this.handleRouteCalculation);
             routeForm.addEventListener('submit', (e) => {
-                e.preventDefault(); // Prevent default form submission immediately
+                e.preventDefault();
                 this.debug('🔥 Form submit event triggered!');
-                // Prevent multiple submissions
                 if (this.isCalculating) {
                     this.debug('⚠️ Route calculation already in progress, ignoring duplicate submission');
                     return;
@@ -193,7 +166,6 @@ class AuraApp {
             this.debug('❌ Route form not found!');
         }
 
-        // Demo location buttons
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('demo-btn')) {
                 this.debug(`🎯 Demo button clicked: ${e.target.dataset.demo}`);
@@ -201,14 +173,12 @@ class AuraApp {
             }
         });
 
-        // Input type radio buttons
         document.addEventListener('change', (e) => {
             if (e.target.type === 'radio' && e.target.name.includes('input-type')) {
                 this.toggleInputType(e.target.name, e.target.value);
             }
         });
 
-        // Header action buttons
         document.addEventListener('click', (e) => {
             if (e.target.id === 'analyticsBtn') {
                 this.analytics.showDashboard();
@@ -221,17 +191,14 @@ class AuraApp {
             }
         });
 
-        // Range input updates
         document.addEventListener('input', (e) => {
             if (e.target.type === 'range') {
-                // Handle max-slope range input specifically
                 if (e.target.id === 'max-slope') {
                     const valueDisplay = document.getElementById('slope-value');
                     if (valueDisplay) {
                         valueDisplay.textContent = e.target.value + '%';
                     }
                 } else {
-                    // Handle other range inputs generically
                     const valueDisplay = document.getElementById(e.target.id + 'Value');
                     if (valueDisplay) {
                         valueDisplay.textContent = e.target.value;
@@ -240,7 +207,6 @@ class AuraApp {
             }
         });
 
-        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
                 switch (e.key) {
@@ -257,12 +223,10 @@ class AuraApp {
         });
 
         console.log('✅ Event listeners setup complete');
-        this.eventListenersSetup = true; // Mark as setup
+        this.eventListenersSetup = true;
     }
 
-    // Setup demo data
     setupDemoData() {
-        // Define demo locations with addresses and coordinates
         this.demoLocations = {
             downtown: {
                 name: "Downtown NYC Route",
@@ -325,23 +289,20 @@ class AuraApp {
         console.log('✅ Demo data setup complete');
     }
 
-    // Handle route calculation
     async handleRouteCalculation(event) {
         this.debug('🚀 handleRouteCalculation called!');
         event.preventDefault();
         
-        // Prevent multiple submissions
         if (this.isCalculating) {
             this.debug('⚠️ Route calculation already in progress, ignoring duplicate submission');
             return;
         }
         
-        this.isCalculating = true; // Set flag
-        
+        this.isCalculating = true;
+
         try {
             this.debug('🔄 Starting route calculation...');
             
-            // Debug: Check if routeDisplay exists
             this.debug(`🔍 RouteDisplay status: ${this.routeDisplay ? 'EXISTS' : 'NULL'}`);
             console.log('🔍 RouteDisplay object:', this.routeDisplay);
             
@@ -353,7 +314,6 @@ class AuraApp {
                 }
             }
             
-            // Show loading state
             try {
                 this.routeDisplay.showLoading();
                 this.debug('✅ Loading state shown');
@@ -362,11 +322,9 @@ class AuraApp {
                 throw loadingError;
             }
             
-            // Collect form data
             const formData = this.collectFormData();
             this.debug('📋 Form data collected: ' + JSON.stringify(formData).substring(0, 100) + '...');
             
-            // Validate form data
             if (!this.validateFormData(formData)) {
                 throw new Error('Please fill in all required fields');
             }
@@ -374,58 +332,46 @@ class AuraApp {
 
             console.log('🔍 Calculating route with data:', formData);
 
-            // Call backend API
             this.debug('🌐 Calling backend API...');
-            // Use centralized ApiService with timeout to avoid hanging forever
             const routeData = await window.apiService.calculateRoute(formData);
 
             console.log('✅ Route calculated successfully:', routeData);
             this.debug('✅ Route data received');
 
-            // Enhance route display with routing method information
             if (window.routeInfoEnhancer) {
                 const routingMethod = window.routeInfoEnhancer.enhanceRouteDisplay(routeData);
-                // RouteInfoEnhancer now handles all notifications - no need for duplicate
             }
 
-            // Display results
             this.routeDisplay.displayRoute(routeData);
             this.debug('✅ Route displayed');
             
-            // Record analytics
             this.analytics.recordRoute({
                 success: true,
                 distance: routeData.distance,
                 accessibility_score: routeData.accessibility_score
             });
 
-            // Save current route
             this.currentRoute = routeData;
 
         } catch (error) {
             console.error('❌ Route calculation failed:', error);
             this.debug('❌ Route calc error: ' + error.message);
             
-            // Show error state
             if (this.routeDisplay) {
                 this.routeDisplay.showError(error.message);
             }
             
-            // Record failed attempt
             if (this.analytics) {
                 this.analytics.recordRoute({ success: false });
             }
             
-            // Show notification
             this.showNotification('Failed to calculate route: ' + error.message, 'error');
         } finally {
-            this.isCalculating = false; // Reset flag
+            this.isCalculating = false;
         }
     }
 
-    // Collect form data
     collectFormData() {
-        // Get coordinates (either from coordinate inputs or geocoded from addresses)
         const startLat = parseFloat(document.getElementById('start-lat').value);
         const startLng = parseFloat(document.getElementById('start-lon').value);
         const endLat = parseFloat(document.getElementById('end-lat').value);
@@ -443,29 +389,26 @@ class AuraApp {
             accessibility_level: document.getElementById('accessibility-level')?.value || 'medium',
             preferences: {
                 avoid_stairs: document.getElementById('avoid-stairs')?.checked || false,
-                avoid_steep_slopes: true, // Default to true
+                avoid_steep_slopes: true,
                 max_slope_percentage: parseFloat(document.getElementById('max-slope')?.value || 5),
                 require_curb_cuts: document.getElementById('require-curb-cuts')?.checked || false,
                 avoid_construction: document.getElementById('avoid-construction')?.checked || false,
                 prefer_wider_sidewalks: document.getElementById('prefer-wider-sidewalks')?.checked || false,
-                require_tactile_guidance: false, // Default
+                require_tactile_guidance: false,
                 mobility_aid: document.getElementById('mobility-aid')?.value || 'none'
             },
-            transport_mode: 'walking', // Default to walking
-            time_preference: 'balanced', // Default to balanced
-            user_id: null // Optional field
+            transport_mode: 'walking',
+            time_preference: 'balanced',
+            user_id: null
         };
     }
 
-    // Validate form data
     validateFormData(data) {
-        // Check for required coordinates
-        if (isNaN(data.start.latitude) || isNaN(data.start.longitude) || 
+        if (isNaN(data.start.latitude) || isNaN(data.start.longitude) ||
             isNaN(data.end.latitude) || isNaN(data.end.longitude)) {
             return false;
         }
 
-        // Validate coordinate ranges
         if (data.start.latitude < -90 || data.start.latitude > 90 ||
             data.start.longitude < -180 || data.start.longitude > 180 ||
             data.end.latitude < -90 || data.end.latitude > 90 ||
@@ -476,7 +419,6 @@ class AuraApp {
         return true;
     }
 
-    // Load demo location
     loadDemoLocation(demoKey) {
         this.debug(`📍 Loading demo: ${demoKey}`);
         const demo = this.demoLocations[demoKey];
@@ -486,35 +428,27 @@ class AuraApp {
             return;
         }
 
-        // Set start location
         this.setLocationData('start', demo.start.address, demo.start.lat, demo.start.lng);
-        
-        // Set end location
         this.setLocationData('end', demo.end.address, demo.end.lat, demo.end.lng);
 
-        // Clear any existing route display to force fresh calculation
         if (this.routeDisplay && this.routeDisplay.currentRoute) {
             this.routeDisplay.currentRoute = null;
-            // Clear route results panel
             const resultsPanel = document.getElementById('route-results');
             if (resultsPanel) {
                 resultsPanel.innerHTML = '';
             }
-            // Show welcome message again
             const welcomeMessage = document.getElementById('welcome-message');
             if (welcomeMessage) {
                 welcomeMessage.style.display = 'block';
             }
         }
 
-        // Show notification
         this.showNotification(`Demo route loaded: ${demo.description}`, 'success');
         
         console.log('📍 Demo location loaded:', demo.name);
         this.debug(`✅ Demo loaded: ${demo.name}`);
     }
 
-    // Toggle between address and coordinate input
     toggleInputType(inputName, inputType) {
         const locationKey = inputName.includes('start') ? 'start' : 'end';
         const addressInput = document.getElementById(`${locationKey}-address-input`);
@@ -529,15 +463,12 @@ class AuraApp {
         }
     }
 
-    // Set location data (address and coordinates)
     setLocationData(locationKey, address, lat, lng) {
-        // Set address
         const addressField = document.getElementById(`${locationKey}-address`);
         if (addressField) {
             addressField.value = address;
         }
 
-        // Set coordinates
         const latField = document.getElementById(`${locationKey}-lat`);
         const lngField = document.getElementById(`${locationKey}-lon`);
         if (latField && lngField) {
@@ -545,11 +476,9 @@ class AuraApp {
             lngField.value = lng.toFixed(6);
         }
 
-        // Show location display
         this.updateLocationDisplay(locationKey, address, lat, lng);
     }
 
-    // Update location display
     updateLocationDisplay(locationKey, address, lat, lng) {
         const displayElement = document.getElementById(`${locationKey}-location-display`);
         if (displayElement) {
@@ -561,7 +490,6 @@ class AuraApp {
         }
     }
 
-    // Geocode address to coordinates
     async geocodeAddress(locationKey) {
         const addressField = document.getElementById(`${locationKey}-address`);
         const address = addressField.value.trim();
@@ -594,7 +522,6 @@ class AuraApp {
         }
     }
 
-    // Reverse geocode coordinates to address
     async reverseGeocode(locationKey) {
         const latField = document.getElementById(`${locationKey}-lat`);
         const lngField = document.getElementById(`${locationKey}-lon`);
@@ -634,7 +561,6 @@ class AuraApp {
         }
     }
 
-    // Show settings modal
     showSettings() {
         const modal = document.createElement('div');
         modal.className = 'modal';
@@ -748,7 +674,6 @@ class AuraApp {
         this.loadCurrentSettings();
     }
 
-    // Load current settings into the modal
     loadCurrentSettings() {
         Object.keys(this.preferences).forEach(key => {
             const element = document.getElementById('settings' + key.charAt(0).toUpperCase() + key.slice(1));
@@ -762,7 +687,6 @@ class AuraApp {
         });
     }
 
-    // Save settings
     saveSettings() {
         const settings = {
             theme: document.getElementById('settingsTheme').value,
@@ -780,13 +704,11 @@ class AuraApp {
         this.savePreferences();
         this.applySettings();
         
-        // Close modal
         document.querySelector('.modal').remove();
         
         this.showNotification('Settings saved successfully!', 'success');
     }
 
-    // Reset settings to defaults
     resetSettings() {
         if (confirm('Reset all settings to defaults?')) {
             this.preferences = this.getDefaultPreferences();
@@ -797,21 +719,17 @@ class AuraApp {
         }
     }
 
-    // Apply settings to the application
     applySettings() {
         const body = document.body;
         
-        // Apply theme
         body.className = body.className.replace(/theme-\w+/g, '');
         if (this.preferences.theme !== 'auto') {
             body.classList.add(`theme-${this.preferences.theme}`);
         }
 
-        // Apply font size
         body.className = body.className.replace(/font-size-\w+/g, '');
         body.classList.add(`font-size-${this.preferences.fontSize}`);
 
-        // Apply accessibility settings
         if (this.preferences.reduceMotion) {
             body.classList.add('reduce-motion');
         } else {
@@ -825,7 +743,6 @@ class AuraApp {
         }
     }
 
-    // Load preferences from localStorage
     loadPreferences() {
         try {
             const stored = localStorage.getItem('aura_preferences');
@@ -836,7 +753,6 @@ class AuraApp {
         }
     }
 
-    // Get default preferences
     getDefaultPreferences() {
         return {
             theme: 'auto',
@@ -851,7 +767,6 @@ class AuraApp {
         };
     }
 
-    // Save preferences to localStorage
     savePreferences() {
         try {
             localStorage.setItem('aura_preferences', JSON.stringify(this.preferences));
@@ -860,7 +775,6 @@ class AuraApp {
         }
     }
 
-    // Show notification
     showNotification(message, type = 'info') {
         if (!this.preferences.notifications) return;
 
@@ -889,9 +803,7 @@ class AuraApp {
         
         document.body.appendChild(notification);
         
-        // Play sound if enabled
         if (this.preferences.sound && type === 'error') {
-            // Would play error sound
         }
         
         setTimeout(() => {
@@ -904,7 +816,6 @@ class AuraApp {
         }, 4000);
     }
 
-    // Get application status
     getStatus() {
         return {
             version: '1.0.0',
@@ -919,17 +830,14 @@ class AuraApp {
         };
     }
 
-    // Load demo location only (without auto-calculating route)
     loadDemoLocationOnly() {
         console.log('🗺️ Loading demo location only (no auto-calculation)...');
         
-        // Just load the shopping demo coordinates without calculating route
         this.loadDemoLocation('shopping');
         this.debug('Demo location loaded, ready for user to calculate route');
     }
 }
 
-// Add CSS animations and theme support
 const appStyles = document.createElement('style');
 appStyles.textContent = `
     @keyframes fadeIn {
@@ -988,7 +896,6 @@ appStyles.textContent = `
 
 document.head.appendChild(appStyles);
 
-// Initialize the application when DOM and all scripts are ready
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 DOM loaded, waiting for all scripts...');
     
@@ -1010,7 +917,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.app.init();
 });
 
-// Global functions for geocoding (called from HTML)
 window.geocodeAddress = async function(locationKey) {
     if (window.app) {
         return window.app.geocodeAddress(locationKey);
@@ -1023,5 +929,4 @@ window.reverseGeocode = async function(locationKey) {
     }
 };
 
-// Export for global access
 window.AuraApp = AuraApp;

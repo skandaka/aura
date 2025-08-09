@@ -1,5 +1,3 @@
-// Analytics Component - Handles data visualization and usage analytics
-
 class Analytics {
     constructor() {
         this.data = this.loadAnalyticsData();

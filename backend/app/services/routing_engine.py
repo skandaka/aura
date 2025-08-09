@@ -1,7 +1,3 @@
-"""
-Advanced routing engine for accessible navigation with real road networks
-"""
-
 import math
 import asyncio
 import time
@@ -22,28 +18,26 @@ from ..services.geospatial_processor import GeospatialProcessor
 from .config import settings
 
 class RoadNetworkNode:
-    """Represents a real road intersection or waypoint"""
     def __init__(self, id: str, lat: float, lon: float, node_type: str = "intersection"):
         self.id = id
         self.lat = lat
         self.lon = lon
-        self.node_type = node_type  # intersection, waypoint, landmark
+        self.node_type = node_type
         self.connections: List['RoadSegment'] = []
         self.accessibility_features = []
         self.obstacles_nearby = []
 
 class RoadSegment:
-    """Represents a real road/sidewalk segment between two nodes"""
-    def __init__(self, id: str, from_node: 'RoadNetworkNode', to_node: 'RoadNetworkNode', 
+    def __init__(self, id: str, from_node: 'RoadNetworkNode', to_node: 'RoadNetworkNode',
                  segment_type: str = "sidewalk"):
         self.id = id
         self.from_node = from_node
         self.to_node = to_node
-        self.segment_type = segment_type  # sidewalk, crosswalk, pathway, road
+        self.segment_type = segment_type
         self.distance = self._calculate_distance()
         self.accessibility_score = 1.0
         self.surface_type = "paved"
-        self.width = 1.5  # meters
+        self.width = 1.5
         self.slope_grade = 0.0
         self.has_curb_cuts = True
         self.has_tactile_guidance = False
@@ -52,8 +46,7 @@ class RoadSegment:
         self.obstacles = []
         
     def _calculate_distance(self) -> float:
-        """Calculate distance between nodes using Haversine formula"""
-        R = 6371000  # Earth's radius in meters
+        R = 6371000
         lat1, lon1 = math.radians(self.from_node.lat), math.radians(self.from_node.lon)
         lat2, lon2 = math.radians(self.to_node.lat), math.radians(self.to_node.lon)
         
@@ -67,31 +60,23 @@ class RoadSegment:
         return R * c
 
 class AdvancedRoutingEngine:
-    """
-    Intelligent routing engine with real road networks and accessibility integration
-    """
-    
+
     def __init__(self):
         self.obstacle_detector = ObstacleDetector()
         self.accessibility_analyzer = AccessibilityAnalyzer()
         self.geospatial_processor = GeospatialProcessor()
         self.route_cache = {}
         
-        # Road network
         self.nodes: Dict[str, RoadNetworkNode] = {}
         self.segments: Dict[str, RoadSegment] = {}
         
     async def calculate_route(self, request: RouteRequest) -> Route:
-        """
-        Calculate intelligent accessible route using real road networks
-        """
         start_time = time.time()
         route_id = str(uuid.uuid4())
         
         print(f"🛣️ Calculating intelligent route from ({request.start.latitude}, {request.start.longitude}) to ({request.end.latitude}, {request.end.longitude})")
         
         try:
-            # Try high-accuracy Mapbox routing first, but only if token is configured
             try:
                 token = settings.MAPBOX_API_KEY or os.getenv("MAPBOX_API_KEY")
                 if token:
@@ -106,7 +91,6 @@ class AdvancedRoutingEngine:
             except Exception as e:
                 print(f"⚠️ Mapbox preferred routing failed: {e}")
             
-            # Try OSRM routing (no API key, public server)
             try:
                 from .osrm_routing_engine import OsrmRoutingEngine
                 osrm_engine = OsrmRoutingEngine()
@@ -117,7 +101,6 @@ class AdvancedRoutingEngine:
             except Exception as e:
                 print(f"⚠️ OSRM routing failed: {e}")
             
-            # Try OSM road network router (graph-based over Overpass data)
             try:
                 from .road_network_router import RoadNetworkRouter
                 rn_engine = RoadNetworkRouter()
@@ -128,23 +111,18 @@ class AdvancedRoutingEngine:
             except Exception as e:
                 print(f"⚠️ RoadNetworkRouter failed: {e}")
             
-            # Build road network for the area (internal fallback)
             await self._build_road_network(request.start, request.end)
             
-            # Incorporate accessibility data
             await self._integrate_accessibility_data(request.preferences)
             
-            # Find optimal path using A* with accessibility weighting
             path = await self._find_accessible_path(request)
             
             if not path:
                 print("⚠️ No accessible path found, using fallback")
                 return await self._calculate_fallback_route(request)
             
-            # Convert path to route points
             route_points = await self._path_to_route_points(path, request)
             
-            # Calculate route metrics
             route_metrics = await self._calculate_route_metrics(route_points, request.preferences)
             
             calculation_time = int((time.time() - start_time) * 1000)
@@ -183,25 +161,20 @@ class AdvancedRoutingEngine:
             return await self._calculate_fallback_route(request)
 
     async def _build_road_network(self, start: Coordinates, end: Coordinates):
-        """Build realistic road network for the route area"""
         print("🏗️ Building intelligent road network (fallback)...")
         
-        # Clear previous network
         self.nodes.clear()
         self.segments.clear()
         
-        # Calculate bounding box (pad by ~1km)
         min_lat = min(start.latitude, end.latitude) - 0.01
         max_lat = max(start.latitude, end.latitude) + 0.01
-        min_lon = min(start.longitude, end.longitude) - 0.01  # FIX: subtract padding for min_lon
+        min_lon = min(start.longitude, end.longitude) - 0.01
         max_lon = max(start.longitude, end.longitude) + 0.01
         
-        # Generate a simple grid as a fallback network (no diagonals)
         grid_size = 10
         lat_step = (max_lat - min_lat) / grid_size
         lon_step = (max_lon - min_lon) / grid_size
         
-        # Build grid of nodes
         grid: List[List[RoadNetworkNode]] = []
         node_id = 0
         for i in range(grid_size + 1):
@@ -215,31 +188,26 @@ class AdvancedRoutingEngine:
                 row.append(node)
             grid.append(row)
         
-        # Connect only adjacent neighbors (right and down) to avoid diagonal and over-connectivity
         segment_id = 0
         for i in range(grid_size + 1):
             for j in range(grid_size + 1):
                 current = grid[i][j]
-                # Right neighbor
                 if j + 1 <= grid_size:
                     segment_id += 1
                     right = grid[i][j + 1]
                     seg = RoadSegment(f"segment_{segment_id}", current, right, "sidewalk")
                     self.segments[seg.id] = seg
                     current.connections.append(seg)
-                    # Bidirectional
                     segment_id += 1
                     seg_rev = RoadSegment(f"segment_{segment_id}", right, current, "sidewalk")
                     self.segments[seg_rev.id] = seg_rev
                     right.connections.append(seg_rev)
-                # Down neighbor
                 if i + 1 <= grid_size:
                     segment_id += 1
                     down = grid[i + 1][j]
                     seg = RoadSegment(f"segment_{segment_id}", current, down, "sidewalk")
                     self.segments[seg.id] = seg
                     current.connections.append(seg)
-                    # Bidirectional
                     segment_id += 1
                     seg_rev = RoadSegment(f"segment_{segment_id}", down, current, "sidewalk")
                     self.segments[seg_rev.id] = seg_rev
@@ -248,10 +216,8 @@ class AdvancedRoutingEngine:
         print(f"✅ Built fallback grid network with {len(self.nodes)} nodes and {len(self.segments)} segments")
 
     async def _integrate_accessibility_data(self, preferences):
-        """Integrate accessibility data into road network"""
         print("♿ Integrating accessibility data...")
         
-        # Get all obstacles in the area
         obstacles = []
         for node in self.nodes.values():
             nearby_obstacles = await self.obstacle_detector.find_obstacles_along_route(
@@ -261,17 +227,14 @@ class AdvancedRoutingEngine:
             )
             obstacles.extend(nearby_obstacles)
         
-        # Apply accessibility scoring to segments
         for segment in self.segments.values():
             await self._score_segment_accessibility(segment, preferences, obstacles)
         
         print(f"✅ Applied accessibility data to {len(self.segments)} segments")
 
     async def _score_segment_accessibility(self, segment: RoadSegment, preferences, obstacles):
-        """Score individual segment for accessibility"""
         base_score = 1.0
         
-        # Check for nearby obstacles
         for obstacle in obstacles:
             distance = self._calculate_distance(
                 segment.from_node.lat, segment.from_node.lon,
@@ -279,34 +242,27 @@ class AdvancedRoutingEngine:
             )
             
             if distance < obstacle.impact_radius:
-                # Apply penalty based on obstacle severity and user needs
                 penalty = self._calculate_obstacle_penalty(obstacle, preferences)
                 base_score -= penalty
         
-        # Factor in slope preferences
         if preferences.avoid_steep_slopes and segment.slope_grade > preferences.max_slope_percentage / 100:
             base_score -= 0.5
         
-        # Factor in surface quality
         if segment.surface_type in ["gravel", "dirt", "broken"]:
             base_score -= 0.3
         
-        # Factor in width for mobility aids
         if preferences.mobility_aid.value != "none" and segment.width < 1.2:
             base_score -= 0.4
         
-        # Factor in curb cuts
         if preferences.require_curb_cuts and not segment.has_curb_cuts:
             base_score -= 0.6
         
-        # Factor in tactile guidance for visually impaired
         if preferences.require_tactile_guidance and not segment.has_tactile_guidance:
             base_score -= 0.3
         
-        segment.accessibility_score = max(0.1, base_score)  # Minimum score of 0.1
+        segment.accessibility_score = max(0.1, base_score)
 
     def _calculate_obstacle_penalty(self, obstacle, preferences) -> float:
-        """Calculate penalty for obstacle based on user needs"""
         base_penalties = {
             "critical": 0.8,
             "high": 0.6,
@@ -316,7 +272,6 @@ class AdvancedRoutingEngine:
         
         penalty = base_penalties.get(obstacle.severity.value, 0.2)
         
-        # Increase penalty if obstacle specifically affects user's mobility aid
         if preferences.mobility_aid.value == "wheelchair" and hasattr(obstacle, 'affects_wheelchair') and obstacle.affects_wheelchair:
             penalty *= 1.5
         elif preferences.mobility_aid.value in ["walker", "cane"] and hasattr(obstacle, 'affects_mobility_aid') and obstacle.affects_mobility_aid:
@@ -325,20 +280,17 @@ class AdvancedRoutingEngine:
         if preferences.require_tactile_guidance and hasattr(obstacle, 'affects_visually_impaired') and obstacle.affects_visually_impaired:
             penalty *= 1.4
         
-        return min(penalty, 0.9)  # Cap penalty at 0.9
+        return min(penalty, 0.9)
 
     async def _find_accessible_path(self, request: RouteRequest) -> List[RoadNetworkNode]:
-        """Find optimal accessible path using A* algorithm with accessibility weighting"""
         print("🔍 Finding optimal accessible path...")
         
-        # Find start and end nodes
         start_node = self._find_nearest_node(request.start.latitude, request.start.longitude)
         end_node = self._find_nearest_node(request.end.latitude, request.end.longitude)
         
         if not start_node or not end_node:
             return None
         
-        # A* pathfinding with accessibility weighting
         open_set = [(0, start_node.id)]
         came_from = {}
         g_score = {start_node.id: 0}
@@ -349,7 +301,6 @@ class AdvancedRoutingEngine:
             current_node = self.nodes[current_id]
             
             if current_node.id == end_node.id:
-                # Reconstruct path
                 path = []
                 while current_id in came_from:
                     path.append(self.nodes[current_id])
@@ -362,8 +313,7 @@ class AdvancedRoutingEngine:
             for segment in current_node.connections:
                 neighbor = segment.to_node
                 
-                # Calculate cost including accessibility
-                accessibility_cost = (1.0 - segment.accessibility_score) * 1000  # Penalty for low accessibility
+                accessibility_cost = (1.0 - segment.accessibility_score) * 1000
                 distance_cost = segment.distance
                 tentative_g_score = g_score[current_id] + distance_cost + accessibility_cost
                 
@@ -377,7 +327,6 @@ class AdvancedRoutingEngine:
         return None
 
     def _find_nearest_node(self, lat: float, lon: float) -> Optional[RoadNetworkNode]:
-        """Find nearest road network node to given coordinates"""
         min_distance = float('inf')
         nearest_node = None
         
@@ -387,15 +336,13 @@ class AdvancedRoutingEngine:
                 min_distance = distance
                 nearest_node = node
         
-        return nearest_node if min_distance < 1000 else None  # Max 1km to snap
+        return nearest_node if min_distance < 1000 else None
 
     def _heuristic(self, node1: RoadNetworkNode, node2: RoadNetworkNode) -> float:
-        """Heuristic function for A* (straight-line distance)"""
         return self._calculate_distance(node1.lat, node1.lon, node2.lat, node2.lon)
 
     def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """Calculate distance between two points using Haversine formula"""
-        R = 6371000  # Earth's radius in meters
+        R = 6371000
         lat1, lon1 = math.radians(lat1), math.radians(lon1)
         lat2, lon2 = math.radians(lat2), math.radians(lon2)
         
@@ -409,7 +356,6 @@ class AdvancedRoutingEngine:
         return R * c
 
     async def _path_to_route_points(self, path: List[RoadNetworkNode], request: RouteRequest) -> List[RoutePoint]:
-        """Convert node path to detailed route points"""
         route_points = []
         cumulative_distance = 0.0
         
@@ -421,13 +367,10 @@ class AdvancedRoutingEngine:
                 )
                 cumulative_distance += segment_distance
             
-            # Generate contextual instruction
             instruction = self._generate_instruction(i, len(path), path, node)
             
-            # Gather accessibility features
             features = self._gather_accessibility_features(node)
             
-            # Check for warnings
             warnings = self._generate_warnings(node)
             
             route_points.append(RoutePoint(
@@ -435,7 +378,7 @@ class AdvancedRoutingEngine:
                 longitude=node.lon,
                 instruction=instruction,
                 distance_from_start=cumulative_distance,
-                elevation=0.0,  # Could be enhanced with elevation API
+                elevation=0.0,
                 accessibility_features=features,
                 warnings=warnings,
                 segment_time=self._calculate_segment_time(segment_distance if i > 0 else 0)
@@ -444,18 +387,15 @@ class AdvancedRoutingEngine:
         return route_points
 
     def _generate_instruction(self, index: int, total_nodes: int, path: List[RoadNetworkNode], node: RoadNetworkNode) -> str:
-        """Generate turn-by-turn instruction"""
         if index == 0:
             return "Start your accessible journey"
         elif index == total_nodes - 1:
             return "You have arrived at your destination"
         
-        # Determine direction change
         if index > 0 and index < total_nodes - 1:
             prev_node = path[index - 1]
             next_node = path[index + 1]
             
-            # Calculate bearing change
             bearing1 = self._calculate_bearing(prev_node.lat, prev_node.lon, node.lat, node.lon)
             bearing2 = self._calculate_bearing(node.lat, node.lon, next_node.lat, next_node.lon)
             
@@ -473,7 +413,6 @@ class AdvancedRoutingEngine:
         return "Continue on accessible path"
 
     def _calculate_bearing(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """Calculate bearing between two points"""
         lat1, lon1 = math.radians(lat1), math.radians(lon1)
         lat2, lon2 = math.radians(lat2), math.radians(lon2)
         
@@ -487,17 +426,14 @@ class AdvancedRoutingEngine:
         return (math.degrees(bearing) + 360) % 360
 
     def _gather_accessibility_features(self, node: RoadNetworkNode) -> List[str]:
-        """Gather accessibility features for a node"""
         features = ["✅ Accessible path", "✅ Real road network"]
         
-        # Add contextual features based on node type
         if node.node_type == "intersection":
             features.append("✅ Safe intersection")
         
         return features
 
     def _generate_warnings(self, node: RoadNetworkNode) -> List[str]:
-        """Generate warnings for a node"""
         warnings = []
         
         if node.obstacles_nearby:
@@ -506,34 +442,29 @@ class AdvancedRoutingEngine:
         return warnings
 
     def _calculate_segment_time(self, distance: float) -> int:
-        """Calculate time to traverse segment (in seconds)"""
         if distance == 0:
             return 0
         
-        # Assume 3.5 km/h walking speed for accessible navigation
-        speed_ms = 3.5 * 1000 / 3600  # Convert to m/s
+        speed_ms = 3.5 * 1000 / 3600
         return int(distance / speed_ms)
 
     async def _calculate_route_metrics(self, route_points: List[RoutePoint], preferences) -> Dict:
-        """Calculate comprehensive route metrics"""
         total_distance = route_points[-1].distance_from_start / 1000.0 if route_points else 0.0
         total_time = sum(point.segment_time for point in route_points)
         
-        # Get obstacles along route
         obstacles = await self.obstacle_detector.find_obstacles_along_route(
             Coordinates(latitude=route_points[0].latitude, longitude=route_points[0].longitude),
             Coordinates(latitude=route_points[-1].latitude, longitude=route_points[-1].longitude),
             radius=200
         ) if route_points else []
         
-        # Calculate accessibility score
         accessibility_score = await self.accessibility_analyzer.calculate_comprehensive_score(
             route_points, preferences, obstacles
         )
         
         return {
             'distance': total_distance,
-            'time': total_time // 60,  # Convert to minutes
+            'time': total_time // 60,
             'accessibility_score': accessibility_score,
             'obstacles': obstacles,
             'warnings': [f"⚠️ {len(obstacles)} accessibility obstacles detected"] if obstacles else [],
@@ -545,39 +476,29 @@ class AdvancedRoutingEngine:
         }
     
     async def _calculate_enhanced_grid_route(self, request: RouteRequest) -> Route:
-        """
-        Calculate high-quality grid-aligned route that follows street patterns
-        """
         start_time = time.time()
         route_id = str(uuid.uuid4())
         
-        # Detect obstacles along the route
         obstacles = await self.obstacle_detector.find_obstacles_along_route(
             request.start, request.end, radius=200
         )
         
-        # Generate grid-aligned road-following waypoints
         route_points = await self._generate_enhanced_grid_points(request, obstacles)
         
-        # Calculate accessibility score
         accessibility_score = await self.accessibility_analyzer.calculate_comprehensive_score(
             route_points, request.preferences, obstacles
         )
         
-        # Calculate route metrics
         total_distance = self._calculate_total_distance(route_points)
         estimated_time = self._calculate_estimated_time(
             total_distance, accessibility_score, request.preferences
         )
         
-        # Generate route warnings and features
         warnings = self._generate_route_warnings(accessibility_score, obstacles)
         features = self._generate_accessibility_features(accessibility_score, request.preferences)
         
-        # Generate alternative routes
         alternatives = await self._generate_alternative_routes(request, route_points)
         
-        # Create route summary
         route_summary = {
             "efficiency_rating": self._calculate_efficiency_rating(total_distance, estimated_time),
             "comfort_level": accessibility_score.overall_score,
@@ -591,11 +512,10 @@ class AdvancedRoutingEngine:
             "route_accuracy": "high"
         }
         
-        # Create complete route object
         route = Route(
             route_id=route_id,
             points=route_points,
-            total_distance=total_distance / 1000.0,  # Convert meters to kilometers
+            total_distance=total_distance / 1000.0,
             estimated_time=estimated_time,
             accessibility_score=accessibility_score,
             alternatives=alternatives,
@@ -610,9 +530,6 @@ class AdvancedRoutingEngine:
         return route
 
     async def _generate_enhanced_grid_points(self, request: RouteRequest, obstacles: List[ObstacleResponse]) -> List[RoutePoint]:
-        """
-        Generate route points that follow realistic street grid patterns
-        """
         print("🔧 Generating enhanced grid-aligned route points...")
         
         start_lat = request.start.latitude
@@ -620,10 +537,8 @@ class AdvancedRoutingEngine:
         end_lat = request.end.latitude
         end_lon = request.end.longitude
         
-        # Create waypoints that follow Manhattan routing with realistic instructions
         waypoints = []
         
-        # Start point
         waypoints.append({
             'lat': start_lat,
             'lon': start_lon,
@@ -631,15 +546,12 @@ class AdvancedRoutingEngine:
             'type': 'start'
         })
         
-        # Calculate intermediate points for grid-like movement
         lat_diff = end_lat - start_lat
         lon_diff = end_lon - start_lon
         
-        # Determine optimal routing strategy
         if abs(lon_diff) > abs(lat_diff):
-            # Go east/west first (longer distance)
-            if abs(lon_diff) > 0.0001:  # Only add intermediate point if significant distance
-                intermediate_lon = start_lon + (lon_diff * 0.7)  # Go 70% of the way
+            if abs(lon_diff) > 0.0001:
+                intermediate_lon = start_lon + (lon_diff * 0.7)
                 waypoints.append({
                     'lat': start_lat,
                     'lon': intermediate_lon,
@@ -647,7 +559,6 @@ class AdvancedRoutingEngine:
                     'type': 'continue'
                 })
                 
-                # Add intersection turn point
                 waypoints.append({
                     'lat': start_lat,
                     'lon': end_lon,
@@ -655,7 +566,6 @@ class AdvancedRoutingEngine:
                     'type': 'turn'
                 })
             
-            # North/south movement
             if abs(lat_diff) > 0.0001:
                 waypoints.append({
                     'lat': end_lat,
@@ -664,9 +574,8 @@ class AdvancedRoutingEngine:
                     'type': 'approach'
                 })
         else:
-            # Go north/south first (longer distance)
             if abs(lat_diff) > 0.0001:
-                intermediate_lat = start_lat + (lat_diff * 0.7)  # Go 70% of the way
+                intermediate_lat = start_lat + (lat_diff * 0.7)
                 waypoints.append({
                     'lat': intermediate_lat,
                     'lon': start_lon,
@@ -674,7 +583,6 @@ class AdvancedRoutingEngine:
                     'type': 'continue'
                 })
                 
-                # Add intersection turn point
                 waypoints.append({
                     'lat': end_lat,
                     'lon': start_lon,
@@ -682,7 +590,6 @@ class AdvancedRoutingEngine:
                     'type': 'turn'
                 })
             
-            # East/west movement
             if abs(lon_diff) > 0.0001:
                 waypoints.append({
                     'lat': end_lat,
@@ -691,7 +598,6 @@ class AdvancedRoutingEngine:
                     'type': 'approach'
                 })
         
-        # End point
         waypoints.append({
             'lat': end_lat,
             'lon': end_lon,
@@ -699,12 +605,10 @@ class AdvancedRoutingEngine:
             'type': 'end'
         })
         
-        # Convert waypoints to RoutePoint objects
         route_points = []
         cumulative_distance = 0.0
         
         for i, waypoint in enumerate(waypoints):
-            # Calculate segment distance
             if i > 0:
                 segment_distance = self._calculate_distance(
                     waypoints[i-1]['lat'], waypoints[i-1]['lon'],
@@ -714,10 +618,8 @@ class AdvancedRoutingEngine:
             else:
                 segment_distance = 0
                 
-            # Calculate segment time
             segment_time = self._calculate_segment_time(segment_distance, request.preferences)
             
-            # Generate accessibility features based on waypoint type
             accessibility_features = []
             warnings = []
             
@@ -737,7 +639,7 @@ class AdvancedRoutingEngine:
                 longitude=waypoint['lon'],
                 instruction=waypoint['instruction'],
                 distance_from_start=cumulative_distance,
-                elevation=10.0,  # Default elevation
+                elevation=10.0,
                 accessibility_features=accessibility_features,
                 warnings=warnings,
                 segment_time=segment_time
@@ -747,39 +649,29 @@ class AdvancedRoutingEngine:
         return route_points
 
     async def _calculate_road_following_route(self, request: RouteRequest) -> Route:
-        """
-        Calculate route that follows grid-aligned roads with proper intersections
-        """
         start_time = time.time()
         route_id = str(uuid.uuid4())
         
-        # Detect obstacles along the route
         obstacles = await self.obstacle_detector.find_obstacles_along_route(
             request.start, request.end, radius=200
         )
         
-        # Generate grid-aligned road-following waypoints
         route_points = await self._generate_grid_aligned_points(request, obstacles)
         
-        # Calculate accessibility score
         accessibility_score = await self.accessibility_analyzer.calculate_comprehensive_score(
             route_points, request.preferences, obstacles
         )
         
-        # Calculate route metrics
         total_distance = self._calculate_total_distance(route_points)
         estimated_time = self._calculate_estimated_time(
             total_distance, accessibility_score, request.preferences
         )
         
-        # Generate route warnings and features
         warnings = self._generate_route_warnings(accessibility_score, obstacles)
         features = self._generate_accessibility_features(accessibility_score, request.preferences)
         
-        # Per request: remove alternatives in fallback as well
         alternatives = []
         
-        # Create route summary
         route_summary = {
             "efficiency_rating": self._calculate_efficiency_rating(total_distance, estimated_time),
             "comfort_level": accessibility_score.overall_score,
@@ -792,11 +684,10 @@ class AdvancedRoutingEngine:
             "route_accuracy": "high"
         }
         
-        # Create complete route object
         route = Route(
             route_id=route_id,
             points=route_points,
-            total_distance=total_distance / 1000.0,  # Convert meters to kilometers
+            total_distance=total_distance / 1000.0,
             estimated_time=estimated_time,
             accessibility_score=accessibility_score,
             alternatives=alternatives,
@@ -811,10 +702,6 @@ class AdvancedRoutingEngine:
         return route
     
     async def _generate_grid_aligned_points(self, request: RouteRequest, obstacles: List[ObstacleResponse]) -> List[RoutePoint]:
-        """
-        Generate route points that follow grid-aligned roads with only horizontal/vertical movements
-        Ensure variation across accessibility levels (high/medium/low)
-        """
         print("🔧 Generating grid-aligned route points...")
         
         start_lat = request.start.latitude
@@ -830,7 +717,6 @@ class AdvancedRoutingEngine:
             'type': 'start'
         })
         
-        # Determine order based on requested level to ensure visual variation
         level = getattr(request, 'accessibility_level', None)
         level_val = level.value if level else 'medium'
         
@@ -838,11 +724,9 @@ class AdvancedRoutingEngine:
             order = ['vertical', 'horizontal']
         elif level_val == 'low':
             order = ['horizontal', 'vertical']
-        else:  # medium
-            # pick based on greater delta for slight change
+        else:
             order = ['vertical', 'horizontal'] if abs(end_lat - start_lat) >= abs(end_lon - start_lon) else ['horizontal', 'vertical']
         
-        # Build dogleg path according to order
         intermediate_lat = end_lat
         intermediate_lon = end_lon
         
@@ -862,7 +746,6 @@ class AdvancedRoutingEngine:
                     'type': 'turn'
                 })
         
-        # End point
         waypoints.append({
             'lat': end_lat,
             'lon': end_lon,
@@ -870,7 +753,6 @@ class AdvancedRoutingEngine:
             'type': 'end'
         })
         
-        # Convert to RoutePoint list with distances/times
         route_points: List[RoutePoint] = []
         cumulative_distance = 0.0
         previous = None
@@ -902,9 +784,8 @@ class AdvancedRoutingEngine:
         return route_points
     
     def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """Calculate distance using Haversine formula"""
-        R = 6371000  # Earth's radius in meters
-        
+        R = 6371000
+
         lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
         dlat = lat2 - lat1
         dlon = lon2 - lon1
@@ -915,7 +796,6 @@ class AdvancedRoutingEngine:
         return R * c
     
     def _calculate_total_distance(self, route_points: List[RoutePoint]) -> float:
-        """Calculate total route distance"""
         if len(route_points) < 2:
             return 0.0
         
@@ -928,13 +808,10 @@ class AdvancedRoutingEngine:
         return total
     
     def _calculate_estimated_time(self, distance: float, accessibility_score: AccessibilityScore, preferences) -> int:
-        """Calculate estimated travel time with accessibility considerations"""
-        base_speed = 4.0  # km/h
-        
-        # Adjust speed based on accessibility score
+        base_speed = 4.0
+
         speed_modifier = 0.5 + (accessibility_score.overall_score * 0.5)
         
-        # Adjust for mobility aids
         if preferences.mobility_aid.value == "wheelchair":
             speed_modifier *= 0.8
         elif preferences.mobility_aid.value == "walker":
@@ -943,10 +820,9 @@ class AdvancedRoutingEngine:
             speed_modifier *= 0.9
         
         effective_speed = base_speed * speed_modifier
-        return int((distance / 1000) / effective_speed * 60)  # minutes
-    
+        return int((distance / 1000) / effective_speed * 60)
+
     def _generate_route_warnings(self, accessibility_score: AccessibilityScore, obstacles: List[ObstacleResponse]) -> List[str]:
-        """Generate warnings for the route"""
         warnings = []
         
         if accessibility_score.overall_score < 0.6:
@@ -967,7 +843,6 @@ class AdvancedRoutingEngine:
         return warnings
     
     def _generate_accessibility_features(self, accessibility_score: AccessibilityScore, preferences) -> List[str]:
-        """Generate positive accessibility features"""
         features = []
         
         features.append("✅ Route follows actual roads and sidewalks")
@@ -991,10 +866,8 @@ class AdvancedRoutingEngine:
         return features
     
     async def _generate_alternative_routes(self, request: RouteRequest, main_route: List[RoutePoint]) -> List[RouteAlternative]:
-        """Generate alternative route options"""
         alternatives = []
         
-        # Generate a faster but less accessible route
         fast_route = RouteAlternative(
             route_id=str(uuid.uuid4()),
             description="Fastest route (may have accessibility challenges)",
@@ -1013,7 +886,6 @@ class AdvancedRoutingEngine:
         )
         alternatives.append(fast_route)
         
-        # Generate a more accessible but longer route
         accessible_route = RouteAlternative(
             route_id=str(uuid.uuid4()),
             description="Most accessible route (longer but safer)",
@@ -1035,13 +907,11 @@ class AdvancedRoutingEngine:
         return alternatives
     
     def _calculate_efficiency_rating(self, distance: float, time: int) -> float:
-        """Calculate route efficiency rating"""
-        ideal_time = (distance / 1000) / 4.0 * 60  # 4 km/h ideal speed
+        ideal_time = (distance / 1000) / 4.0 * 60
         efficiency = min(1.0, ideal_time / max(time, 1))
         return round(efficiency, 2)
     
     def _calculate_elevation_gain(self, route_points: List[RoutePoint]) -> float:
-        """Calculate total elevation gain"""
         gain = 0.0
         for i in range(1, len(route_points)):
             if route_points[i].elevation and route_points[i-1].elevation:
@@ -1051,10 +921,8 @@ class AdvancedRoutingEngine:
         return round(gain, 1)
     
     def _generate_cache_key(self, request: RouteRequest) -> str:
-        """Generate cache key for route request"""
         return f"{request.start.latitude:.4f},{request.start.longitude:.4f}-{request.end.latitude:.4f},{request.end.longitude:.4f}-{request.accessibility_level.value}-{request.preferences.mobility_aid.value}"
     
     async def _calculate_fallback_route(self, request: RouteRequest) -> Route:
-        """Fallback to grid-aligned road-following route (not a straight line)."""
         print("🔄 Using grid-aligned fallback (no straight lines)")
         return await self._calculate_road_following_route(request)

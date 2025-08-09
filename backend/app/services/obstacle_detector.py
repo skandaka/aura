@@ -1,6 +1,3 @@
-"""
-Obstacle detection and management service
-"""
 
 import math
 from typing import List, Dict, Optional
@@ -10,16 +7,12 @@ import uuid
 from ..models.schemas import Coordinates, ObstacleResponse, ObstacleType, SeverityLevel
 
 class ObstacleDetector:
-    """
-    Advanced obstacle detection and management system
-    """
-    
+
     def __init__(self):
         self.obstacles_db = self._initialize_sample_obstacles()
         self.detection_radius = 400.0  # meters (increased for demo visibility)
         
     def _initialize_sample_obstacles(self) -> Dict[str, Dict]:
-        """Initialize sample obstacles for demonstration"""
         return {
             "obs_001": {
                 "id": "obs_001",
@@ -105,7 +98,6 @@ class ObstacleDetector:
                 "estimated_clearance_date": None,
                 "impact_radius": 100.0
             },
-            # Schaumburg / Woodfield demo obstacles
             "obs_101": {
                 "id": "obs_101",
                 "location": {"latitude": 42.0414, "longitude": -88.0754},
@@ -134,7 +126,6 @@ class ObstacleDetector:
                 "estimated_clearance_date": None,
                 "impact_radius": 20.0
             },
-            # Added Schaumburg route corridor demo obstacles (near shopping demo)
             "obs_103": {
                 "id": "obs_103",
                 "location": {"latitude": 42.0389, "longitude": -88.0748},
@@ -166,16 +157,12 @@ class ObstacleDetector:
         }
     
     async def find_obstacles_along_route(self, start: Coordinates, end: Coordinates, radius: float = None) -> List[ObstacleResponse]:
-        """
-        Find obstacles along a route corridor
-        """
         if radius is None:
             radius = self.detection_radius
         print(f"🔎 Detecting obstacles within {radius}m corridor...")
         
         obstacles = []
         
-        # Calculate route corridor points for more accurate detection
         route_points = self._generate_route_corridor(start, end, num_points=10)
         
         for obstacle_data in self.obstacles_db.values():
@@ -184,7 +171,6 @@ class ObstacleDetector:
                 longitude=obstacle_data["location"]["longitude"]
             )
             
-            # Check if obstacle is within radius of any route point
             for route_point in route_points:
                 distance = self._calculate_distance(
                     route_point.latitude, route_point.longitude,
@@ -207,9 +193,8 @@ class ObstacleDetector:
                         impact_radius=obstacle_data.get("impact_radius", 50.0)
                     )
                     obstacles.append(obstacle)
-                    break  # Don't add the same obstacle multiple times
+                    break
         
-        # Sort obstacles by severity and distance from start
         obstacles.sort(key=lambda obs: (
             {"critical": 0, "high": 1, "medium": 2, "low": 3}[obs.severity.value],
             self._calculate_distance(start.latitude, start.longitude, obs.location.latitude, obs.location.longitude)
@@ -219,11 +204,9 @@ class ObstacleDetector:
         return obstacles
     
     async def get_all_obstacles(self, active_only: bool = True) -> List[ObstacleResponse]:
-        """Get all obstacles in the system"""
         obstacles = []
         
         for obstacle_data in self.obstacles_db.values():
-            # Filter out expired temporary obstacles if active_only is True
             if active_only and obstacle_data.get("estimated_clearance_date"):
                 if obstacle_data["estimated_clearance_date"] < datetime.now():
                     continue
@@ -250,7 +233,6 @@ class ObstacleDetector:
         return obstacles
     
     async def report_obstacle(self, obstacle_data: Dict) -> str:
-        """Report a new obstacle"""
         obstacle_id = f"obs_{len(self.obstacles_db) + 1:03d}"
         
         new_obstacle = {
@@ -276,7 +258,6 @@ class ObstacleDetector:
         return obstacle_id
     
     async def get_obstacle_by_id(self, obstacle_id: str) -> Optional[ObstacleResponse]:
-        """Get a specific obstacle by ID"""
         if obstacle_id not in self.obstacles_db:
             return None
         
@@ -300,7 +281,6 @@ class ObstacleDetector:
         )
     
     async def update_obstacle_verification(self, obstacle_id: str, verified: bool) -> bool:
-        """Update obstacle verification status"""
         if obstacle_id not in self.obstacles_db:
             return False
         
@@ -308,7 +288,6 @@ class ObstacleDetector:
         return True
     
     def _generate_route_corridor(self, start: Coordinates, end: Coordinates, num_points: int = 10) -> List[Coordinates]:
-        """Generate points along a route corridor for obstacle detection"""
         points = []
         
         for i in range(num_points + 1):
@@ -320,7 +299,6 @@ class ObstacleDetector:
         return points
     
     def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """Calculate distance between two points using Haversine formula"""
         R = 6371000  # Earth's radius in meters
         
         lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])

@@ -1,7 +1,3 @@
-"""
-Grid-based routing engine for accurate road-following navigation
-This engine ensures routes follow perfect grid patterns with only horizontal and vertical movements
-"""
 
 import math
 import asyncio
@@ -21,7 +17,6 @@ from ..services.accessibility_analyzer import AccessibilityAnalyzer
 
 @dataclass
 class GridNode:
-    """Represents a node in the grid network"""
     id: str
     latitude: float
     longitude: float
@@ -34,7 +29,6 @@ class GridNode:
 
 @dataclass
 class GridRoad:
-    """Represents a road segment in the grid"""
     id: str
     from_node: str
     to_node: str
@@ -44,11 +38,7 @@ class GridRoad:
     accessibility_score: float
 
 class GridBasedRoutingEngine:
-    """
-    Grid-based routing engine that ensures routes follow perfect grid patterns
-    Routes only move horizontally or vertically and change direction only at intersections
-    """
-    
+
     def __init__(self):
         self.obstacle_detector = ObstacleDetector()
         self.accessibility_analyzer = AccessibilityAnalyzer()
@@ -56,25 +46,19 @@ class GridBasedRoutingEngine:
         self.grid_roads: Dict[str, GridRoad] = {}
         self.route_cache = {}
         
-        # Grid configuration
         self.grid_spacing = 0.001  # ~111 meters at equator
         self.grid_size = 21  # default; overridden dynamically per route
     
     async def calculate_route(self, request: RouteRequest) -> Route:
-        """
-        Calculate route using grid-based road network
-        """
         start_time = time.time()
         route_id = str(uuid.uuid4())
         
         print(f"🗺️ Calculating grid-based route from {request.start.latitude}, {request.start.longitude} to {request.end.latitude}, {request.end.longitude}")
         
         try:
-            # Create grid network around the route area
             center_lat = (request.start.latitude + request.end.latitude) / 2
             center_lon = (request.start.longitude + request.end.longitude) / 2
             
-            # Dynamically size grid to cover both endpoints with margin
             lat_diff = abs(request.end.latitude - request.start.latitude)
             lon_diff = abs(request.end.longitude - request.start.longitude)
             half_size_lat = int(math.ceil((lat_diff / 2) / max(self.grid_spacing, 1e-9))) + 5
@@ -84,7 +68,6 @@ class GridBasedRoutingEngine:
             
             self._create_grid_network(center_lat, center_lon, half_size)
             
-            # Find grid nodes closest to start and end points
             start_node = self._find_nearest_grid_node(request.start.latitude, request.start.longitude)
             end_node = self._find_nearest_grid_node(request.end.latitude, request.end.longitude)
             
@@ -92,37 +75,30 @@ class GridBasedRoutingEngine:
                 print("⚠️ Could not snap to grid, using fallback")
                 return await self._calculate_fallback_route(request)
             
-            # Calculate grid-based path using Manhattan distance routing
             path = self._calculate_manhattan_path(start_node, end_node)
             
             if not path:
                 print("⚠️ No grid path found, using fallback")
                 return await self._calculate_fallback_route(request)
             
-            # Convert path to route points
             route_points = await self._path_to_route_points(path, request)
             
-            # Detect obstacles along the route
             obstacles = await self.obstacle_detector.find_obstacles_along_route(
                 request.start, request.end, radius=200
             )
             
-            # Calculate accessibility score
             accessibility_score = await self.accessibility_analyzer.calculate_comprehensive_score(
                 route_points, request.preferences, obstacles
             )
             
-            # Calculate route metrics
             total_distance = self._calculate_total_distance(route_points)
             estimated_time = self._calculate_estimated_time(
                 total_distance, accessibility_score, request.preferences
             )
             
-            # Generate route warnings and features
             warnings = self._generate_route_warnings(accessibility_score, obstacles)
             features = self._generate_accessibility_features(accessibility_score, request.preferences)
             
-            # Create route summary indicating successful grid routing
             route_summary = {
                 "efficiency_rating": self._calculate_efficiency_rating(total_distance, estimated_time),
                 "comfort_level": accessibility_score.overall_score,
@@ -136,7 +112,6 @@ class GridBasedRoutingEngine:
                 "route_accuracy": "high"
             }
             
-            # Create complete route object
             route = Route(
                 route_id=route_id,
                 points=route_points,
@@ -161,15 +136,11 @@ class GridBasedRoutingEngine:
             return await self._calculate_simplified_grid_route(request)
     
     async def _calculate_simplified_grid_route(self, request: RouteRequest) -> Route:
-        """
-        Calculate a simplified grid route when the main grid routing fails
-        """
         start_time = time.time()
         route_id = str(uuid.uuid4())
         
         print("🔧 Creating simplified grid route...")
         
-        # Create route points using simple Manhattan routing
         route_points = []
         
         start_lat = request.start.latitude
@@ -177,7 +148,6 @@ class GridBasedRoutingEngine:
         end_lat = request.end.latitude
         end_lon = request.end.longitude
         
-        # Start point
         route_points.append(RoutePoint(
             latitude=start_lat,
             longitude=start_lon,
@@ -191,14 +161,11 @@ class GridBasedRoutingEngine:
         
         cumulative_distance = 0.0
         
-        # Determine routing direction (horizontal first or vertical first)
         lat_diff = end_lat - start_lat
         lon_diff = end_lon - start_lon
         
         if abs(lon_diff) > abs(lat_diff):
-            # Go horizontal first
             if abs(lon_diff) > 0.0001:
-                # Horizontal movement
                 intermediate_lat = start_lat
                 intermediate_lon = end_lon
                 segment_distance = self._calculate_distance(start_lat, start_lon, intermediate_lat, intermediate_lon)
@@ -215,7 +182,6 @@ class GridBasedRoutingEngine:
                     segment_time=int(segment_distance / 1000 / 4 * 3600)  # 4 km/h in seconds
                 ))
             
-            # Vertical movement
             if abs(lat_diff) > 0.0001:
                 segment_distance = self._calculate_distance(end_lon, start_lat, end_lat, end_lon)
                 cumulative_distance += segment_distance
@@ -231,9 +197,7 @@ class GridBasedRoutingEngine:
                     segment_time=int(segment_distance / 1000 / 4 * 3600)
                 ))
         else:
-            # Go vertical first
             if abs(lat_diff) > 0.0001:
-                # Vertical movement
                 intermediate_lat = end_lat
                 intermediate_lon = start_lon
                 segment_distance = self._calculate_distance(start_lat, start_lon, intermediate_lat, intermediate_lon)
@@ -250,7 +214,6 @@ class GridBasedRoutingEngine:
                     segment_time=int(segment_distance / 1000 / 4 * 3600)
                 ))
             
-            # Horizontal movement
             if abs(lon_diff) > 0.0001:
                 segment_distance = self._calculate_distance(end_lat, start_lon, end_lat, end_lon)
                 cumulative_distance += segment_distance
@@ -266,7 +229,6 @@ class GridBasedRoutingEngine:
                     segment_time=int(segment_distance / 1000 / 4 * 3600)
                 ))
         
-        # End point
         if route_points[-1].latitude != end_lat or route_points[-1].longitude != end_lon:
             route_points.append(RoutePoint(
                 latitude=end_lat,
@@ -279,7 +241,6 @@ class GridBasedRoutingEngine:
                 segment_time=0
             ))
         
-        # Create accessibility score
         from ..models.schemas import AccessibilityScore
         accessibility_score = AccessibilityScore(
             overall_score=0.85,
@@ -292,11 +253,9 @@ class GridBasedRoutingEngine:
             traffic_safety=0.8
         )
         
-        # Calculate route metrics
         total_distance = cumulative_distance
         estimated_time = int(total_distance / 1000 / 4 * 60)  # 4 km/h in minutes
         
-        # Create route summary
         route_summary = {
             "efficiency_rating": 0.85,
             "comfort_level": 0.85,
@@ -310,7 +269,6 @@ class GridBasedRoutingEngine:
             "route_accuracy": "high"
         }
         
-        # Create complete route object
         route = Route(
             route_id=route_id,
             points=route_points,
@@ -329,9 +287,6 @@ class GridBasedRoutingEngine:
         return route
     
     def _create_grid_network(self, center_lat: float, center_lon: float, half_size: int):
-        """
-        Create a perfect grid network of roads with dynamic coverage
-        """
         print(f"🔧 Creating grid network around {center_lat}, {center_lon} with half_size={half_size}")
         
         self.grid_nodes.clear()
@@ -350,7 +305,6 @@ class GridBasedRoutingEngine:
                     is_intersection=True
                 )
         
-        # Create horizontal roads
         road_id = 0
         for i in range(-half_size, half_size + 1):
             for j in range(-half_size, half_size):
@@ -378,7 +332,6 @@ class GridBasedRoutingEngine:
                 self.grid_nodes[to_node].connected_roads.append(road_id_str)
                 road_id += 1
         
-        # Create vertical roads
         for i in range(-half_size, half_size):
             for j in range(-half_size, half_size + 1):
                 from_node = f"node_{i}_{j}"
@@ -408,9 +361,6 @@ class GridBasedRoutingEngine:
         print(f"✅ Grid network created with {len(self.grid_nodes)} nodes and {len(self.grid_roads)} roads")
     
     def _find_nearest_grid_node(self, lat: float, lon: float) -> Optional[str]:
-        """
-        Find the nearest grid node to given coordinates
-        """
         min_distance = float('inf')
         nearest_node = None
         
@@ -423,11 +373,6 @@ class GridBasedRoutingEngine:
         return nearest_node if min_distance < 1000 else None  # Max 1000m to snap to grid
     
     def _calculate_manhattan_path(self, start_node: str, end_node: str) -> List[str]:
-        """
-        Calculate path through grid using Manhattan routing (only horizontal/vertical moves)
-        This ensures routes follow real road patterns and only turn at intersections
-        """
-        # Parse start and end coordinates from node IDs
         start_parts = start_node.split('_')
         end_parts = end_node.split('_')
         
@@ -437,13 +382,10 @@ class GridBasedRoutingEngine:
         path = [start_node]
         current_i, current_j = start_i, start_j
         
-        # Choose optimal routing strategy based on distance
         lat_distance = abs(end_i - current_i)
         lon_distance = abs(end_j - current_j)
         
-        # Go with the longer distance first to minimize turns
         if lon_distance >= lat_distance:
-            # Horizontal movement first
             if end_j != current_j:
                 direction = 1 if end_j > current_j else -1
                 while current_j != end_j:
@@ -455,7 +397,6 @@ class GridBasedRoutingEngine:
                         print(f"⚠️ Grid node {node_id} doesn't exist during horizontal movement")
                         return []
             
-            # Vertical movement second
             if end_i != current_i:
                 direction = 1 if end_i > current_i else -1
                 while current_i != end_i:
@@ -467,7 +408,6 @@ class GridBasedRoutingEngine:
                         print(f"⚠️ Grid node {node_id} doesn't exist during vertical movement")
                         return []
         else:
-            # Vertical movement first
             if end_i != current_i:
                 direction = 1 if end_i > current_i else -1
                 while current_i != end_i:
@@ -479,7 +419,6 @@ class GridBasedRoutingEngine:
                         print(f"⚠️ Grid node {node_id} doesn't exist during vertical movement")
                         return []
             
-            # Horizontal movement second
             if end_j != current_j:
                 direction = 1 if end_j > current_j else -1
                 while current_j != end_j:
@@ -495,23 +434,15 @@ class GridBasedRoutingEngine:
         return path
 
     def _calculate_grid_path(self, start_node: str, end_node: str) -> List[str]:
-        """
-        Calculate path through grid using Manhattan routing (only horizontal/vertical moves)
-        """
-        # Use the new Manhattan routing method
         return self._calculate_manhattan_path(start_node, end_node)
     
     async def _path_to_route_points(self, path: List[str], request: RouteRequest) -> List[RoutePoint]:
-        """
-        Convert grid path to route points with proper instructions
-        """
         route_points = []
         cumulative_distance = 0.0
         
         for i, node_id in enumerate(path):
             node = self.grid_nodes[node_id]
             
-            # Calculate segment distance
             if i > 0:
                 prev_node = self.grid_nodes[path[i-1]]
                 segment_distance = self._calculate_distance(
@@ -522,17 +453,14 @@ class GridBasedRoutingEngine:
             else:
                 segment_distance = 0
             
-            # Generate instruction based on position and movement
             instruction = self._generate_grid_instruction(i, len(path), path, node_id)
             
-            # Accessibility features for grid roads
             accessibility_features = ["✅ Grid-aligned route", "✅ Clear intersections"]
             if node.is_intersection and i > 0 and i < len(path) - 1:
                 accessibility_features.append("✅ Intersection with good visibility")
             
             warnings = []
             
-            # Calculate segment time
             segment_time = self._calculate_segment_time(segment_distance)
             
             route_points.append(RoutePoint(
@@ -549,15 +477,11 @@ class GridBasedRoutingEngine:
         return route_points
     
     def _generate_grid_instruction(self, index: int, total_nodes: int, path: List[str], current_node: str) -> str:
-        """
-        Generate turn-by-turn instructions for grid navigation
-        """
         if index == 0:
             return "Start your journey on the grid road network"
         elif index == total_nodes - 1:
             return "You have arrived at your destination"
         
-        # Determine direction of movement
         if index > 0:
             prev_node = path[index - 1]
             curr_parts = current_node.split('_')
@@ -577,19 +501,15 @@ class GridBasedRoutingEngine:
                 else:
                     direction = "south"
             
-            # Check if direction changes at next step (indicating a turn)
             if index < total_nodes - 1:
                 next_node = path[index + 1]
                 next_parts = next_node.split('_')
                 next_i, next_j = int(next_parts[1]), int(next_parts[2])
                 
-                # Current movement direction
                 current_horizontal = curr_i == prev_i
-                # Next movement direction
                 next_horizontal = next_i == curr_i
                 
                 if current_horizontal != next_horizontal:
-                    # Direction change - this is a turn at intersection
                     if next_horizontal:
                         if next_j > curr_j:
                             return f"At intersection, turn right and continue east"
@@ -608,8 +528,7 @@ class GridBasedRoutingEngine:
         return "Continue on grid road"
     
     def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """Calculate distance using Haversine formula"""
-        R = 6371000  # Earth's radius in meters
+        R = 6371000  # Earth's R in meters
         
         lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
         dlat = lat2 - lat1
@@ -621,7 +540,6 @@ class GridBasedRoutingEngine:
         return R * c
     
     def _calculate_total_distance(self, route_points: List[RoutePoint]) -> float:
-        """Calculate total route distance"""
         if len(route_points) < 2:
             return 0.0
         
@@ -634,13 +552,10 @@ class GridBasedRoutingEngine:
         return total
     
     def _calculate_estimated_time(self, distance: float, accessibility_score: AccessibilityScore, preferences) -> int:
-        """Calculate estimated travel time with accessibility considerations"""
         base_speed = 4.0  # km/h
         
-        # Adjust speed based on accessibility score
         speed_modifier = 0.5 + (accessibility_score.overall_score * 0.5)
         
-        # Adjust for mobility aids
         if preferences.mobility_aid.value == "wheelchair":
             speed_modifier *= 0.8
         elif preferences.mobility_aid.value == "walker":
@@ -652,12 +567,10 @@ class GridBasedRoutingEngine:
         return int((distance / 1000) / effective_speed * 60)  # minutes
     
     def _calculate_segment_time(self, distance: float) -> int:
-        """Calculate time for a route segment"""
         base_speed = 4.0  # km/h
         return int((distance / 1000) / base_speed * 3600)  # seconds
     
     def _generate_route_warnings(self, accessibility_score: AccessibilityScore, obstacles: List[ObstacleResponse]) -> List[str]:
-        """Generate warnings for the route"""
         warnings = []
         
         if accessibility_score.overall_score < 0.6:
@@ -672,7 +585,6 @@ class GridBasedRoutingEngine:
         return warnings
     
     def _generate_accessibility_features(self, accessibility_score: AccessibilityScore, preferences) -> List[str]:
-        """Generate positive accessibility features"""
         features = ["✅ Grid-based routing ensures predictable path"]
         
         if accessibility_score.surface_quality > 0.8:
@@ -687,22 +599,18 @@ class GridBasedRoutingEngine:
         return features
     
     def _calculate_efficiency_rating(self, distance: float, time: int) -> float:
-        """Calculate route efficiency rating"""
         ideal_time = (distance / 1000) / 4.0 * 60  # 4 km/h ideal speed
         efficiency = min(1.0, ideal_time / max(time, 1))
         return round(efficiency, 2)
     
     async def _calculate_fallback_route(self, request: RouteRequest) -> Route:
-        """Fallback to simple routing when grid network is unavailable"""
         print("🔄 Using simple routing fallback")
         
         start_time = time.time()
         route_id = str(uuid.uuid4())
         
-        # Create simple direct route points
         route_points = []
         
-        # Start point
         route_points.append(RoutePoint(
             latitude=request.start.latitude,
             longitude=request.start.longitude,
@@ -714,13 +622,11 @@ class GridBasedRoutingEngine:
             segment_time=0
         ))
         
-        # Calculate direct distance
         total_distance = self._calculate_distance(
             request.start.latitude, request.start.longitude,
             request.end.latitude, request.end.longitude
         )
         
-        # End point
         route_points.append(RoutePoint(
             latitude=request.end.latitude,
             longitude=request.end.longitude,
@@ -732,7 +638,6 @@ class GridBasedRoutingEngine:
             segment_time=int(total_distance / 1000 / 4 * 3600)
         ))
         
-        # Create accessibility score
         from ..models.schemas import AccessibilityScore
         accessibility_score = AccessibilityScore(
             overall_score=0.8,
@@ -745,10 +650,8 @@ class GridBasedRoutingEngine:
             traffic_safety=0.85
         )
         
-        # Calculate estimated time
         estimated_time = int(total_distance / 1000 / 4 * 60)  # 4 km/h in minutes
         
-        # Create route
         route = Route(
             route_id=route_id,
             points=route_points,

@@ -1,5 +1,3 @@
-// ObstacleReporter Component - Handles obstacle reporting functionality
-
 class ObstacleReporter {
     constructor() {
         this.isReporting = false;
@@ -8,7 +6,6 @@ class ObstacleReporter {
     }
 
     init() {
-        // Initialize the obstacle reporter component
         console.log('ObstacleReporter component initialized');
         this.setupEventListeners();
     }

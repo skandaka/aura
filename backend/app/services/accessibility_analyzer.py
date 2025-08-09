@@ -1,16 +1,10 @@
-"""
-Advanced accessibility analysis service
-"""
 
 import math
 from typing import List, Dict, Optional
 from ..models.schemas import AccessibilityScore, RoutePoint, AccessibilityPreferences, ObstacleResponse
 
 class AccessibilityAnalyzer:
-    """
-    Comprehensive accessibility analysis and scoring system
-    """
-    
+
     def __init__(self):
         self.scoring_weights = {
             'surface_quality': 0.20,
@@ -28,11 +22,7 @@ class AccessibilityAnalyzer:
         preferences: AccessibilityPreferences, 
         obstacles: List[ObstacleResponse]
     ) -> AccessibilityScore:
-        """
-        Calculate comprehensive accessibility score with multiple factors
-        """
-        
-        # Calculate individual component scores
+
         surface_quality = self._analyze_surface_quality(route_points, obstacles)
         slope_accessibility = self._analyze_slope_accessibility(route_points, preferences)
         obstacle_avoidance = self._analyze_obstacle_avoidance(obstacles, preferences)
@@ -41,7 +31,6 @@ class AccessibilityAnalyzer:
         lighting_adequacy = self._analyze_lighting_adequacy(route_points)
         traffic_safety = self._analyze_traffic_safety(route_points)
         
-        # Calculate weighted overall score
         overall_score = (
             surface_quality * self.scoring_weights['surface_quality'] +
             slope_accessibility * self.scoring_weights['slope_accessibility'] +
@@ -64,10 +53,8 @@ class AccessibilityAnalyzer:
         )
     
     def _analyze_surface_quality(self, route_points: List[RoutePoint], obstacles: List[ObstacleResponse]) -> float:
-        """Analyze surface quality along the route"""
-        base_score = 0.9  # Assume good surface quality by default
+        base_score = 0.9  # ssume good surface quality by default
         
-        # Penalize for surface-related obstacles
         surface_obstacles = [obs for obs in obstacles if obs.type.value in ["broken_surface", "narrow_path"]]
         
         for obstacle in surface_obstacles:
@@ -80,10 +67,8 @@ class AccessibilityAnalyzer:
             
             base_score -= penalty
         
-        # Consider surface variations along route points
         surface_variation_penalty = 0.0
         for point in route_points:
-            # Simulate surface quality analysis
             if "uneven" in " ".join(point.warnings).lower():
                 surface_variation_penalty += 0.05
             if "cracked" in " ".join(point.warnings).lower():
@@ -94,7 +79,6 @@ class AccessibilityAnalyzer:
         return max(0.0, min(1.0, base_score))
     
     def _analyze_slope_accessibility(self, route_points: List[RoutePoint], preferences: AccessibilityPreferences) -> float:
-        """Analyze slope accessibility throughout the route"""
         if len(route_points) < 2:
             return 1.0
         
@@ -103,21 +87,17 @@ class AccessibilityAnalyzer:
         
         for i in range(1, len(route_points)):
             if route_points[i].elevation is not None and route_points[i-1].elevation is not None:
-                # Calculate distance between points
                 distance = self._calculate_distance(
                     route_points[i-1].latitude, route_points[i-1].longitude,
                     route_points[i].latitude, route_points[i].longitude
                 )
                 
-                # Calculate slope percentage
                 elevation_change = abs(route_points[i].elevation - route_points[i-1].elevation)
                 slope_percentage = (elevation_change / max(distance, 1)) * 100 if distance > 0 else 0
                 
-                # Score based on slope vs. preference
                 if slope_percentage <= max_slope_threshold:
                     slope_scores.append(1.0)
                 else:
-                    # Exponential penalty for slopes exceeding threshold
                     excess_slope = slope_percentage - max_slope_threshold
                     penalty = min(1.0, excess_slope / 10.0)  # 10% slope = full penalty
                     slope_scores.append(max(0.0, 1.0 - penalty))
@@ -125,14 +105,12 @@ class AccessibilityAnalyzer:
         return sum(slope_scores) / len(slope_scores) if slope_scores else 0.8
     
     def _analyze_obstacle_avoidance(self, obstacles: List[ObstacleResponse], preferences: AccessibilityPreferences) -> float:
-        """Analyze how well the route avoids accessibility obstacles"""
         if not obstacles:
             return 1.0
         
         total_penalty = 0.0
         
         for obstacle in obstacles:
-            # Base penalty by severity
             severity_penalty = {
                 "critical": 0.5,
                 "high": 0.3,
@@ -140,7 +118,6 @@ class AccessibilityAnalyzer:
                 "low": 0.05
             }.get(obstacle.severity.value, 0.1)
             
-            # Additional penalty based on user preferences and obstacle type
             if obstacle.type.value == "stairs" and preferences.avoid_stairs:
                 severity_penalty *= 1.5
             
@@ -150,7 +127,6 @@ class AccessibilityAnalyzer:
             if obstacle.type.value == "steep_slope" and preferences.avoid_steep_slopes:
                 severity_penalty *= 1.4
             
-            # Consider mobility aid impact
             if preferences.mobility_aid.value == "wheelchair":
                 if obstacle.affects_wheelchair:
                     severity_penalty *= 1.3
@@ -160,16 +136,13 @@ class AccessibilityAnalyzer:
             
             total_penalty += severity_penalty
         
-        # Cap total penalty
         total_penalty = min(total_penalty, 0.8)
         
         return max(0.0, 1.0 - total_penalty)
     
     def _analyze_width_adequacy(self, route_points: List[RoutePoint], preferences: AccessibilityPreferences) -> float:
-        """Analyze pathway width adequacy"""
-        base_score = 0.85  # Assume adequate width by default
+        base_score = 0.85
         
-        # Bonus for wider sidewalks preference
         if preferences.prefer_wider_sidewalks:
             width_bonus = 0.0
             for point in route_points:
@@ -179,28 +152,23 @@ class AccessibilityAnalyzer:
             
             base_score += min(width_bonus, 0.15)
         
-        # Check for width-related warnings
         width_warnings = 0
         for point in route_points:
             for warning in point.warnings:
                 if "narrow" in warning.lower() or "width" in warning.lower():
                     width_warnings += 1
         
-        # Apply penalty for width issues
         width_penalty = min(width_warnings * 0.1, 0.4)
         base_score -= width_penalty
         
-        # Mobility aid considerations
         if preferences.mobility_aid.value == "wheelchair":
-            base_score *= 0.95  # Slightly more demanding requirements
+            base_score *= 0.95
         
         return max(0.0, min(1.0, base_score))
     
     def _analyze_safety_rating(self, route_points: List[RoutePoint]) -> float:
-        """Analyze overall safety rating of the route"""
         base_safety = 0.8
         
-        # Analyze safety-related features and warnings
         safety_features = 0
         safety_warnings = 0
         
@@ -213,7 +181,6 @@ class AccessibilityAnalyzer:
                 if any(keyword in warning.lower() for keyword in ["unsafe", "danger", "hazard", "risk"]):
                     safety_warnings += 1
         
-        # Adjust score based on features and warnings
         safety_bonus = min(safety_features * 0.02, 0.15)
         safety_penalty = min(safety_warnings * 0.05, 0.3)
         
@@ -222,12 +189,8 @@ class AccessibilityAnalyzer:
         return max(0.0, min(1.0, final_score))
     
     def _analyze_lighting_adequacy(self, route_points: List[RoutePoint]) -> float:
-        """Analyze lighting adequacy along the route"""
-        # Simulated lighting analysis
         base_lighting = 0.75
         
-        # Time-based adjustment (would use actual time in real implementation)
-        # For now, assume good lighting
         lighting_features = 0
         
         for point in route_points:
@@ -240,10 +203,8 @@ class AccessibilityAnalyzer:
         return max(0.0, min(1.0, base_lighting + lighting_bonus))
     
     def _analyze_traffic_safety(self, route_points: List[RoutePoint]) -> float:
-        """Analyze traffic safety considerations"""
         base_traffic_safety = 0.85
         
-        # Analyze traffic-related warnings and features
         traffic_warnings = 0
         traffic_features = 0
         
@@ -256,7 +217,6 @@ class AccessibilityAnalyzer:
                 if any(keyword in feature.lower() for keyword in ["crossing", "signal", "protected", "pedestrian"]):
                     traffic_features += 1
         
-        # Adjust score
         traffic_penalty = min(traffic_warnings * 0.08, 0.4)
         traffic_bonus = min(traffic_features * 0.03, 0.15)
         
@@ -265,8 +225,7 @@ class AccessibilityAnalyzer:
         return max(0.0, min(1.0, final_score))
     
     def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """Calculate distance between two points using Haversine formula"""
-        R = 6371000  # Earth's radius in meters
+        R = 6371000
         
         lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
         dlat = lat2 - lat1
@@ -278,8 +237,7 @@ class AccessibilityAnalyzer:
         return R * c
     
     def generate_accessibility_report(self, score: AccessibilityScore, preferences: AccessibilityPreferences) -> Dict[str, any]:
-        """Generate a detailed accessibility report"""
-        
+
         def score_to_grade(score_value: float) -> str:
             if score_value >= 0.9:
                 return "Excellent"
@@ -336,7 +294,6 @@ class AccessibilityAnalyzer:
         }
     
     def _generate_recommendations(self, score: AccessibilityScore, preferences: AccessibilityPreferences) -> List[str]:
-        """Generate recommendations based on accessibility score"""
         recommendations = []
         
         if score.surface_quality < 0.7:

@@ -1,13 +1,9 @@
-"""
-Pydantic models for API request/response validation
-"""
 
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
 
-# Enums for validation
 class AccessibilityLevel(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
@@ -47,7 +43,6 @@ class TimePreference(str, Enum):
     MOST_ACCESSIBLE = "most_accessible"
     BALANCED = "balanced"
 
-# New: Amenities
 class AmenityType(str, Enum):
     REST_SPOT = "rest_spot"
     AUDIO_CROSSWALK = "audio_crosswalk"
@@ -55,9 +50,7 @@ class AmenityType(str, Enum):
     RAMP = "ramp"
     ACCESSIBLE_RESTROOM = "accessible_restroom"
 
-# Base models
 class Coordinates(BaseModel):
-    """Geographic coordinates"""
     latitude: float = Field(..., ge=-90, le=90, description="Latitude coordinate")
     longitude: float = Field(..., ge=-180, le=180, description="Longitude coordinate")
 
@@ -72,9 +65,7 @@ class AccessibilityPreferences(BaseModel):
     require_tactile_guidance: bool = False
     mobility_aid: MobilityAid = MobilityAid.NONE
 
-# Request models
 class RouteRequest(BaseModel):
-    """Route calculation request"""
     start: Coordinates
     end: Coordinates
     accessibility_level: AccessibilityLevel = AccessibilityLevel.MEDIUM
@@ -84,7 +75,6 @@ class RouteRequest(BaseModel):
     user_id: Optional[str] = None
 
 class ObstacleReport(BaseModel):
-    """Obstacle reporting request"""
     location: Coordinates
     type: ObstacleType
     severity: SeverityLevel
@@ -94,9 +84,7 @@ class ObstacleReport(BaseModel):
     affects_mobility_aid: bool = True
     reporter_id: Optional[str] = None
 
-# Response models
 class RoutePoint(BaseModel):
-    """Individual point in a route"""
     latitude: float
     longitude: float
     instruction: str
@@ -107,7 +95,6 @@ class RoutePoint(BaseModel):
     segment_time: Optional[int] = None  # seconds
 
 class AccessibilityScore(BaseModel):
-    """Comprehensive accessibility scoring"""
     overall_score: float = Field(..., ge=0, le=1)
     surface_quality: float = Field(..., ge=0, le=1)
     slope_accessibility: float = Field(..., ge=0, le=1)
@@ -118,7 +105,6 @@ class AccessibilityScore(BaseModel):
     traffic_safety: float = Field(..., ge=0, le=1)
 
 class RouteAlternative(BaseModel):
-    """Alternative route option"""
     route_id: str
     description: str
     total_distance: float
@@ -127,7 +113,6 @@ class RouteAlternative(BaseModel):
     key_features: List[str] = []
 
 class Route(BaseModel):
-    """Complete route response"""
     route_id: str
     points: List[RoutePoint]
     total_distance: float
@@ -139,11 +124,9 @@ class Route(BaseModel):
     route_summary: Dict[str, Any] = {}
     created_at: datetime
     calculation_time_ms: Optional[int] = None
-    # New: obstacles along the route for map rendering
     obstacles: List['ObstacleResponse'] = []
 
 class AmenityResponse(BaseModel):
-    """Amenity locations like rest spots, audio crosswalks, elevators, etc."""
     id: str
     name: str
     type: AmenityType
@@ -152,7 +135,6 @@ class AmenityResponse(BaseModel):
     installed_at: Optional[datetime] = None
 
 class ObstacleResponse(BaseModel):
-    """Obstacle information response"""
     id: str
     location: Coordinates
     type: ObstacleType
@@ -167,16 +149,13 @@ class ObstacleResponse(BaseModel):
     impact_radius: float = 50.0  # meters
 
 class AnalyticsResponse(BaseModel):
-    """Route analytics response"""
     total_routes_calculated: int
     average_accessibility_score: float
     most_common_obstacles: List[Dict[str, Any]]
     popular_areas: List[Dict[str, Any]]
     user_satisfaction_rating: Optional[float] = None
 
-# Utility response models
 class HealthCheck(BaseModel):
-    """Health check response"""
     status: str
     service: str
     version: str
@@ -185,17 +164,14 @@ class HealthCheck(BaseModel):
     uptime_seconds: Optional[int] = None
 
 class ErrorResponse(BaseModel):
-    """Error response model"""
     error: str
     message: str
     details: Optional[Dict[str, Any]] = None
     timestamp: datetime
 
 class SuccessResponse(BaseModel):
-    """Generic success response"""
     success: bool = True
     message: str
     data: Optional[Dict[str, Any]] = None
 
-# Rebuild models to resolve forward refs now that ObstacleResponse exists
 Route.model_rebuild(force=True)

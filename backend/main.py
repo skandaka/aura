@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Aura: Accessible Urban Route Assistant - Main Application Entry Point
-A sophisticated accessible routing platform with advanced geospatial analysis
-"""
 
 import uvicorn
 from fastapi import FastAPI
@@ -14,17 +9,14 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from project .env (for MAPBOX_API_KEY, etc.)
 load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 
-# Add the app directory to the Python path
 sys.path.append(str(Path(__file__).parent / "app"))
 
 from app.api.routes import router as api_router
 from app.models.database import create_tables
 from app.services.config import settings
 
-# Create FastAPI application
 app = FastAPI(
     title="Aura: Accessible Urban Route Assistant",
     description="""
@@ -45,7 +37,6 @@ app = FastAPI(
     openapi_url="/api/openapi.json"
 )
 
-# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, specify exact origins
@@ -54,40 +45,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API routes
 app.include_router(api_router, prefix="/api")
 
-# Initialize database tables
 @app.on_event("startup")
 async def startup_event():
-    """Initialize application on startup"""
     create_tables()
     print("🚀 Aura: Accessible Urban Route Assistant")
     print("📊 Database initialized successfully")
     print("🌐 API Documentation: http://localhost:8000/api/docs")
     print("🎯 Frontend: http://localhost:8000")
 
-# Serve static files from frontend directory
 frontend_src_path = Path(__file__).parent.parent / "frontend" / "src"
 frontend_public_path = Path(__file__).parent.parent / "frontend" / "public"
 
-# Mount frontend src directory
 if frontend_src_path.exists():
     app.mount("/src", StaticFiles(directory=str(frontend_src_path)), name="frontend_src")
 
-# Mount frontend public directory  
 if frontend_public_path.exists():
     app.mount("/public", StaticFiles(directory=str(frontend_public_path)), name="frontend_public")
 
-# Serve the frontend application
 @app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
-    """Serve the main frontend application"""
     frontend_file = Path(__file__).parent.parent / "frontend" / "index.html"
     if frontend_file.exists():
         return FileResponse(str(frontend_file))
     
-    # Fallback to embedded HTML if frontend files don't exist
     return HTMLResponse(content="""
     <!DOCTYPE html>
     <html lang="en">
@@ -112,10 +94,8 @@ async def serve_frontend():
     </html>
     """)
 
-# Health check endpoint
 @app.get("/health")
 async def health_check():
-    """System health check"""
     return {
         "status": "healthy",
         "service": "aura-accessible-router",
